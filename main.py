@@ -9,6 +9,7 @@ import os # file and directory management
 import pickle
 
 # CONFIGURATION
+print("Starting configuration!")
 #CAM_INDEX              # USB camera index
 FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
@@ -21,7 +22,7 @@ ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
 # MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
 EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
 INPUT_SHAPE = (224, 224, 3)
-
+print("Configuration done!")
 
 # Load previous feedback data if it exists
 if os.path.exists(FEEDBACK_FILE):
@@ -29,11 +30,12 @@ if os.path.exists(FEEDBACK_FILE):
         NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
 else:
   NORMAL_DATA, ANOMALY_DATA = [], []
-
+print("Feedback file loaded")
 
 # Load visual feature extractor
 FEATURE_URL = EFFICIENT_NET_B0
 feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= INPUT_SHAPE, trainable=False)
+print("Feature extractor loaded")
 
 # Build or load temporal model
 def build_model():
@@ -66,18 +68,20 @@ for cam in range(5):
         break
 else:
     raise RuntimeError("No USB camera found.")
+print("Found Camera! Training will now begin...")
 
 # Train on only normal feedback
 buffer = deque(maxlen=SEQ_LEN)
 num_frames = -1
 while num_frames < TOTAL_FRAMES:
-  ret, frame = cap.read()
-  if not ret:
-    break
-  feat = extract_feature(frame)
-  buffer.append(feat)
-  if len(buffer) == SEQ_LEN:
-    NORMAL_DATA.append(np.stack(buffer))
+    ret, frame = cap.read()
+    if not ret:
+        break
+    feat = extract_feature(frame)
+    buffer.append(feat)
+    if len(buffer) == SEQ_LEN:
+        NORMAL_DATA.append(np.stack(buffer))
+    cv2.imshow("Anomaly Detector", frame)
 X = np.array(NORMAL_DATA)
 y = np.array([0]* len(NORMAL_DATA))
 temporal_model.fit(X, y, epochs=5, batch=4)
