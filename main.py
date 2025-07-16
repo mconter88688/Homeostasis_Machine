@@ -1,3 +1,5 @@
+import sys
+print(sys.executable)
 import cv2 # for camera
 import numpy as np # for arrays
 import tensorflow as tf # for TensorFlow
