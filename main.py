@@ -82,6 +82,8 @@ while num_frames < TOTAL_FRAMES:
     if len(buffer) == SEQ_LEN:
         NORMAL_DATA.append(np.stack(buffer))
     cv2.imshow("Anomaly Detector", frame)
+    num_frames+=1
+print("Done collecting data")
 X = np.array(NORMAL_DATA)
 y = np.array([0]* len(NORMAL_DATA))
 temporal_model.fit(X, y, epochs=5, batch=4)
