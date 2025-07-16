@@ -12,7 +12,7 @@ import pickle
 #CAM_INDEX              # USB camera index
 FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
-TOTAL_FRAMES = 1000
+TOTAL_FRAMES = 10000
 MODEL_PATH = "homeostasis_model.h5"
 FEEDBACK_FILE = "feedback.pkl"
 # NORMAL_DATA = []            # for feedback retraining
@@ -70,7 +70,7 @@ else:
 # Train on only normal feedback
 buffer = deque(maxlen=SEQ_LEN)
 num_frames = -1
-while num_frames < total_frames:
+while num_frames < TOTAL_FRAMES:
   ret, frame = cap.read()
   if not ret:
     break
@@ -84,12 +84,7 @@ temporal_model.fit(X, y, epochs=5, batch=4)
 temporal_model.save(MODEL_PATH)
 
 
-
-
-
-
-
-#Test and RHLF loop
+# Test and RHLF loop
 print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
 while True:
     ret, frame = cap.read()
