@@ -1,3 +1,4 @@
+import fsm as fsm
 import sys
 print(sys.executable)
 import cv2 # for camera
