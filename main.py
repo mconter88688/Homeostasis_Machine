@@ -81,15 +81,15 @@ else:
     raise RuntimeError("No USB camera found.")  
 print("Camera Found!")
 
-num_frames = 0
 
 class NormalDataTraining(fsm.State):
     def __init__(self, FSM):
         self.FSM = FSM
+        self.num_frames = 0
 
     def Enter(self):
         print("Normal Feedback Data Mode")
-        num_frames = 0
+        self.num_frames = 0
 
     
     def Execute(self):
@@ -110,7 +110,7 @@ class NormalDataTraining(fsm.State):
 
         if key == ord('q'):
             self.FSM.Transition("toMenu")
-        num_frames+=1
+        self.num_frames+=1
 
 
     def Exit(self):
