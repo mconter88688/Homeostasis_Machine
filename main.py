@@ -28,10 +28,13 @@ print("Configuration done!")
 
 # Load previous feedback data if it exists
 if os.path.exists(FEEDBACK_FILE):
-    with open(FEEDBACK_FILE, "rb") as f:
-        NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
+    try:
+        with open(FEEDBACK_FILE, "rb") as f:
+            NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
+    except EOFError:
+        NORMAL_DATA, ANOMALY_DATA = [], []
 else:
-  NORMAL_DATA, ANOMALY_DATA = [], []
+    NORMAL_DATA, ANOMALY_DATA = [], []
 print("Feedback file loaded")
 
 # Load visual feature extractor
@@ -50,9 +53,12 @@ def build_model():
     m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return m
 
-if os.path.exists(MODEL_PATH):
+answer = input("Do you want to use your saved model?")
+if os.path.exists(MODEL_PATH) and answer == "Y":
+    print("Loading old model...")
     temporal_model = load_model(MODEL_PATH) # function imported from tensorflow.keras.models
 else:
+    print("Loading new model...")
     temporal_model = build_model()
 
 # Helper: extract feature from single frame
