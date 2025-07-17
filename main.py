@@ -34,8 +34,7 @@ buffer = deque(maxlen=SEQ_LEN)
 
 ### SETUP ###
 # Load previous feedback data if it exists
-answer = input("Do you want to include past feedback data?").strip().upper()
-if os.path.exists(FEEDBACK_FILE) and answer == "Y":
+if os.path.exists(FEEDBACK_FILE):
     try:
         with open(FEEDBACK_FILE, "rb") as f:
             NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
@@ -174,8 +173,6 @@ class Menu(fsm.State):
         pass
 
 
-        
-
 class SavingModelAndFeedback(fsm.State):
     def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM):
         self.FEEDBACK_FILE = FEEDBACK_FILE
@@ -263,11 +260,11 @@ hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM)
 hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM)
 hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM)
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
-hs_model.FSM.transitions["toMenu"] = fsm.Transition()
-hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition()
-hs_model.FSM.transitions["toRLHF"] = fsm.Transition()
-hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition()
-hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition()
+hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
+hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
+hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
+hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition("SavingModelAndFeedback")
+hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingModelAndFeedback")
 
 hs_model.FSM.Transition("toMenu")
 hs_model.FSM.SetState("Menu")
