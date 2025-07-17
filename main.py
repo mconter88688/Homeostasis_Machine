@@ -150,10 +150,10 @@ class Menu(fsm.State):
     
     def Enter(self):
         print("**Select from the following:**")
-        print("Wipe Model and Feedback:/t W")
-        print("Save Feedback and Retrain Model:/t S")
-        print("Take in Normal Training Data:/t N")
-        print("Give User Input on Normal and Abnormal Scenes:/t F")
+        print("Wipe Model and Feedback:\t W")
+        print("Save Feedback and Retrain Model:\t S")
+        print("Take in Normal Training Data:\t N")
+        print("Give User Input on Normal and Abnormal Scenes:\t F")
 
             
     def Execute(self):
@@ -268,4 +268,5 @@ hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingMod
 
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")
-hs_model.FSM.Execute()
+while True:
+    hs_model.FSM.Execute()
