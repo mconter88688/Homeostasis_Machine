@@ -72,8 +72,14 @@ def extract_feature(frame):
     feats = feature_extractor(tensor) # use feature extractor on adjusted frame
     return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
 
-cap = 0
-
+for cam in range(5):
+    cap = cv2.VideoCapture(cam)
+    if cap.isOpened():
+        CAM_INDEX = cam
+        break
+else:
+    raise RuntimeError("No USB camera found.")  
+print("Camera Found!")
 
 class NormalDataTraining(fsm.State):
     def __init__(self, FSM):
@@ -82,13 +88,6 @@ class NormalDataTraining(fsm.State):
     def Enter(self):
         print("Normal Feedback Data Mode")
         num_frames = 0
-        for cam in range(5):
-            cap = cv2.VideoCapture(cam)
-            if cap.isOpened():
-                CAM_INDEX = cam
-                break
-        else:
-            raise RuntimeError("No USB camera found.")
 
     
     def Execute(self):
@@ -114,7 +113,6 @@ class NormalDataTraining(fsm.State):
 
     def Exit(self):
         buffer.clear()
-        cap.release()
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
@@ -207,13 +205,6 @@ class RLHF(fsm.State):
 
     def Enter(self):
         print("Human Feedback Mode")
-        for cam in range(5):
-            cap = cv2.VideoCapture(cam)
-            if cap.isOpened():
-                CAM_INDEX = cam
-                break
-        else:
-            raise RuntimeError("No USB camera found.")    
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
 
     def Execute(self):
@@ -250,7 +241,8 @@ class RLHF(fsm.State):
             print("Labeled one anomalous sequence")
 
     def Exit(self):
-        pass
+        buffer.clear()
+        cv2.destroyAllWindows()
 
 
 print("About to make HS_MODEL")
