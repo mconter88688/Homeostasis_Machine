@@ -83,7 +83,17 @@ while num_frames < TOTAL_FRAMES:
     buffer.append(feat)
     if len(buffer) == SEQ_LEN:
         NORMAL_DATA.append(np.stack(buffer))
+    
+    cv2.putText(frame, f"{num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
     cv2.imshow("Anomaly Detector", frame)
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('q'):
+        break
+    elif key == ord('x'):
+        with open(FEEDBACK_FILE, 'wb') as f:
+            pass
+
     num_frames+=1
 print("Done collecting data")
 X = np.array(NORMAL_DATA)
@@ -124,6 +134,9 @@ while True:
     elif key == ord('a') and len(buffer) == SEQ_LEN:
         ANOMALY_DATA.append(np.stack(buffer))
         print("Labeled one anomalous sequence")
+    elif key == ord('x'):
+        with open(FEEDBACK_FILE, 'wb') as f:
+            pass
 
 # Clean up
 cap.release()
