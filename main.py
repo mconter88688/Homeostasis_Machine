@@ -96,7 +96,7 @@ class NormalDataTraining(fsm.State):
         ret, frame = cap.read()
         if not ret:
             print("Unsuccessful frame capture. Going to Menu...")
-            self.ChangeState(self.FSM, "toMenu", "Menu")
+            self.FSM.Transition("toMenu")
             return
         feat = extract_feature(frame)
         buffer.append(feat)
@@ -108,7 +108,7 @@ class NormalDataTraining(fsm.State):
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
-            self.ChangeState(self.FSM, "toMenu", "Menu")
+            self.FSM.Transition("toMenu")
         num_frames+=1
 
 
@@ -136,7 +136,7 @@ class WipingModelAndFeedback(fsm.State):
         if os.path.exists(self.MODEL_PATH):
             os.remove(self.MODEL_PATH)
         print("Feedback and model successfully removed!")
-        self.ChangeState(self.FSM, "toMenu", "Menu")
+        self.FSM.Transition("toMenu")
         return
     def Exit(self):
         pass
@@ -159,13 +159,13 @@ class Menu(fsm.State):
     def Execute(self):
         answer = input("").strip().upper()
         if answer == "W":
-            self.ChangeState(self.FSM, "toWipingModelAndFeedback", "WipingModelAndFeedback")
+            self.FSM.Transition("toWipingModelAndFeedback")
         elif answer == "S":
-            self.ChangeState(self.FSM, "toSavingModelAndFeedback", "SavingModelAndFeedback")
+            self.FSM.Transition("toSavingModelAndFeedback")
         elif answer == "N":
-            self.ChangeState(self.FSM, "toNormalDataTraining", "NormalDataTraining")
+            self.FSM.Transition("toNormalDataTraining")
         elif answer == "F":
-            self.ChangeState(self.FSM, "toRLHF", "RLHF")
+            self.FSM.Transition("toRLHF")
         else:
             print("Invalid input. Try again.")
 
@@ -195,7 +195,7 @@ class SavingModelAndFeedback(fsm.State):
         with open(FEEDBACK_FILE, "wb") as f:
             pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
         
-        self.ChangeState(self.FSM, "toMenu", "Menu")
+        self.FSM.Transition("toMenu")
         return
 
     def Exit(self):
@@ -220,7 +220,7 @@ class RLHF(fsm.State):
         ret, frame = cap.read()
         if not ret:
             print("Unsuccessful frame capture. Going to Menu...")
-            self.ChangeState(self.FSM, "toMenu", "Menu")
+            self.FSM.Transition("toMenu")
             return
         feat = extract_feature(frame)
         buffer.append(feat) # add 1D array to end of the buffer
@@ -240,7 +240,7 @@ class RLHF(fsm.State):
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
-            self.ChangeState(self.FSM, "toMenu", "Menu")
+            self.FSM.Transition("toMenu")
             return
         elif key == ord('n') and len(buffer) == SEQ_LEN:
             NORMAL_DATA.append(np.stack(buffer))
@@ -253,7 +253,7 @@ class RLHF(fsm.State):
         pass
 
 
-
+print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
 hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM)
 hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM)
@@ -267,5 +267,5 @@ hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition("SavingMod
 hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingModelAndFeedback")
 
 hs_model.FSM.Transition("toMenu")
-hs_model.FSM.SetState("Menu")
+print("About to execute HS_MODEL")
 hs_model.FSM.Execute()

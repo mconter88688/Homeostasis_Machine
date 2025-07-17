@@ -7,14 +7,11 @@ class Transition:
         self.toState = toState
 
     def Execute(self):
-        pass
+        print("Transitioning!")
 
 ## States ##
 class State:
-    
-    def ChangeState(self, FSM, transName, stateName):
-        FSM.curTrans = FSM.transitions[transName]
-        FSM.curState = FSM.states[stateName]
+    pass
 
 
 ## Finite State Machine ##
