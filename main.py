@@ -104,7 +104,7 @@ class NormalDataTraining(fsm.State):
         if len(buffer) == SEQ_LEN:
             NORMAL_DATA.append(np.stack(buffer))
         
-        cv2.putText(frame, f"{num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
+        cv2.putText(frame, f"{self.num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
         cv2.imshow("Anomaly Detector", frame)
         key = cv2.waitKey(1) & 0xFF
 
