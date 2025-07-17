@@ -1,5 +1,14 @@
 # Homeostasis_Machine
 
+wget https://nvidia.box.com/shared/static/ul3en63vpxzh5hksm3tvqvlon4z3x2hn.whl -O tensorflow-2.10.0+nv22.08-cp38-cp38-linux_aarch64.whl
+pip install tensorflow-2.10.0+nv22.08-cp38-cp38-linux_aarch64.whl
+sudo apt install python3-pip python3-dev
+pip3 install virtualenv
+virtualenv venv
+source venv/bin/activate
+python -c "import tensorflow as tf; print(tf.__version__)"
+
+
 ## **Step 1: Feature Extraction**
 
 **Model Choice:** use [EfficientNet B0](https://docs.google.com/document/d/1FaLHgkX1yyqP3BC2HPN98mr7qGprXW4-m012bNmbNUU/edit?tab=t.0) (fast enough, lightweight enough, and accurate)
