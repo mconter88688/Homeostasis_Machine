@@ -98,7 +98,7 @@ while num_frames < TOTAL_FRAMES:
 print("Done collecting data")
 X = np.array(NORMAL_DATA)
 y = np.array([0]* len(NORMAL_DATA))
-temporal_model.fit(X, y, epochs=5, batch=4)
+temporal_model.fit(X, y, epochs=5, batch_size=4)
 temporal_model.save(MODEL_PATH)
 
 
