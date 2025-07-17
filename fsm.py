@@ -7,7 +7,8 @@ class Transition:
         self.toState = toState
 
     def Execute(self):
-        print("Transitioning!")
+        #print("Transitioning!")
+        pass
 
 ## States ##
 class State:
@@ -34,14 +35,14 @@ class FSM:
     def Execute(self):
         if self.curTrans != None:
             if self.curState != None:
-                print("Exit")
+                #print("Exit")
                 self.curState.Exit()
             #print("Execute")
             self.curTrans.Execute()
             self.SetState(self.curTrans.toState)
             self.curTrans = None
         if self.curState != self.prevState:
-            print("Enter")
+            #print("Enter")
             self.curState.Enter()
             self.prevState = self.curState
         self.curState.Execute()

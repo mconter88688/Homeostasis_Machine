@@ -150,10 +150,10 @@ class Menu(fsm.State):
     
     def Enter(self):
         print("**Select from the following:**")
-        print("Wipe Model and Feedback:                           W")
-        print("Save Feedback and Retrain Model:                   S")
-        print("Take in Normal Training Data:                      N")
-        print("Give User Input on Normal and Abnormal Scenes:     F")
+        print("Wipe Model and Feedback:...........................W")
+        print("Save Feedback and Retrain Model:...................S")
+        print("Take in Normal Training Data:......................N")
+        print("Give User Input on Normal and Abnormal Scenes:.....F")
 
             
     def Execute(self):
