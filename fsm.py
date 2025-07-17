@@ -33,7 +33,8 @@ class FSM:
 
     def Execute(self):
         if self.curTrans != None:
-            self.curState.Exit()
+            if self.curState != None:
+                self.curState.Exit()
             self.curTrans.Execute()
             self.SetState(self.curTrans.toState)
             self.curTrans = None
