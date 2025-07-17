@@ -1,3 +1,6 @@
+import fsm as fsm
+import sys
+print(sys.executable)
 import cv2 # for camera
 import numpy as np # for arrays
 import tensorflow as tf # for TensorFlow
@@ -9,6 +12,7 @@ import os # file and directory management
 import pickle
 
 # CONFIGURATION
+print("Starting configuration!")
 #CAM_INDEX              # USB camera index
 FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
@@ -21,19 +25,23 @@ ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
 # MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
 EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
 INPUT_SHAPE = (224, 224, 3)
-
+print("Configuration done!")
 
 # Load previous feedback data if it exists
 if os.path.exists(FEEDBACK_FILE):
-    with open(FEEDBACK_FILE, "rb") as f:
-        NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
+    try:
+        with open(FEEDBACK_FILE, "rb") as f:
+            NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
+    except EOFError:
+        NORMAL_DATA, ANOMALY_DATA = [], []
 else:
-  NORMAL_DATA, ANOMALY_DATA = [], []
-
+    NORMAL_DATA, ANOMALY_DATA = [], []
+print("Feedback file loaded")
 
 # Load visual feature extractor
 FEATURE_URL = EFFICIENT_NET_B0
 feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= INPUT_SHAPE, trainable=False)
+print("Feature extractor loaded")
 
 # Build or load temporal model
 def build_model():
@@ -46,9 +54,12 @@ def build_model():
     m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return m
 
-if os.path.exists(MODEL_PATH):
+answer = input("Do you want to use your saved model?").strip().upper()
+if os.path.exists(MODEL_PATH) and answer == "Y":
+    print("Loading old model...")
     temporal_model = load_model(MODEL_PATH) # function imported from tensorflow.keras.models
 else:
+    print("Loading new model...")
     temporal_model = build_model()
 
 # Helper: extract feature from single frame
@@ -66,21 +77,35 @@ for cam in range(5):
         break
 else:
     raise RuntimeError("No USB camera found.")
+print("Found Camera! Training will now begin...")
 
 # Train on only normal feedback
 buffer = deque(maxlen=SEQ_LEN)
 num_frames = -1
 while num_frames < TOTAL_FRAMES:
-  ret, frame = cap.read()
-  if not ret:
-    break
-  feat = extract_feature(frame)
-  buffer.append(feat)
-  if len(buffer) == SEQ_LEN:
-    NORMAL_DATA.append(np.stack(buffer))
+    ret, frame = cap.read()
+    if not ret:
+        break
+    feat = extract_feature(frame)
+    buffer.append(feat)
+    if len(buffer) == SEQ_LEN:
+        NORMAL_DATA.append(np.stack(buffer))
+    
+    cv2.putText(frame, f"{num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
+    cv2.imshow("Anomaly Detector", frame)
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('q'):
+        break
+    elif key == ord('x'):
+        with open(FEEDBACK_FILE, 'wb') as f:
+            pass
+
+    num_frames+=1
+print("Done collecting data")
 X = np.array(NORMAL_DATA)
 y = np.array([0]* len(NORMAL_DATA))
-temporal_model.fit(X, y, epochs=5, batch=4)
+temporal_model.fit(X, y, epochs=5, batch_size=4)
 temporal_model.save(MODEL_PATH)
 
 
@@ -116,20 +141,26 @@ while True:
     elif key == ord('a') and len(buffer) == SEQ_LEN:
         ANOMALY_DATA.append(np.stack(buffer))
         print("Labeled one anomalous sequence")
+    elif key == ord('x'):
+        with open(FEEDBACK_FILE, 'wb') as f:
+            pass
 
 # Clean up
 cap.release()
 cv2.destroyAllWindows()
 
-# If new data labeled, retrain
-if NORMAL_DATA or ANOMALY_DATA:
-    print("Retraining model with feedback data...")
-    # Create training sets
-    X = np.array(NORMAL_DATA + ANOMALY_DATA)
-    y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-    temporal_model.fit(X, y, epochs=5, batch_size=4)
-    temporal_model.save(MODEL_PATH)
-    print("Model updated and saved.")
+answer = input("Do you want to save feedback files and train the new model?").strip().upper()
 
-with open(FEEDBACK_FILE, "wb") as f:
-    pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
+if answer == "Y":
+    # If new data labeled, retrain
+    if NORMAL_DATA or ANOMALY_DATA:
+        print("Retraining model with feedback data...")
+        # Create training sets
+        X = np.array(NORMAL_DATA + ANOMALY_DATA)
+        y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
+        temporal_model.fit(X, y, epochs=5, batch_size=4)
+        temporal_model.save(MODEL_PATH)
+        print("Model updated and saved.")
+
+    with open(FEEDBACK_FILE, "wb") as f:
+        pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
