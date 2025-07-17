@@ -13,32 +13,6 @@ class Transition:
 class State:
     pass
 
-class NormalDataTraining(State):
-    def __init__(self, FSM):
-        self.FSM = FSM
-        pass
-
-    def Enter(self):
-        pass
-    
-    def Execute(self):
-        pass
-    def Exit(self):
-        pass
-
-class WipingModelAndFeedback(State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH):
-        self.FEEDBACK_FILE = FEEDBACK_FILE
-        self.MODEL_PATH = MODEL_PATH
-    
-    
-
-class SavingModelAndFeedback(State):
-    pass
-
-class RLHF(State):
-    pass
-
 ## Finite State Machine ##
 class FSM:
     def __init__(self, char):

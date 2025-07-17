@@ -1,6 +1,6 @@
 import fsm as fsm
-import sys
-print(sys.executable)
+#import sys
+#print(sys.executable)
 import cv2 # for camera
 import numpy as np # for arrays
 import tensorflow as tf # for TensorFlow
@@ -26,6 +26,39 @@ ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
 EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
 INPUT_SHAPE = (224, 224, 3)
 print("Configuration done!")
+
+
+
+class NormalDataTraining(fsm.State):
+    def __init__(self, FSM):
+        self.FSM = FSM
+        pass
+
+    def Enter(self):
+        pass
+    
+    def Execute(self):
+        pass
+    def Exit(self):
+        pass
+
+class WipingModelAndFeedback(fsm.State):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH):
+        self.FEEDBACK_FILE = FEEDBACK_FILE
+        self.MODEL_PATH = MODEL_PATH
+    
+class Menu(fsm.State):
+    pass
+        
+
+class SavingModelAndFeedback(fsm.State):
+    pass
+
+class RLHF(fsm.State):
+    pass
+
+
+
 
 # Load previous feedback data if it exists
 if os.path.exists(FEEDBACK_FILE):
