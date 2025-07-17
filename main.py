@@ -1,3 +1,4 @@
+from enum import Enum
 import fsm as fsm
 #import sys
 #print(sys.executable)
@@ -19,15 +20,30 @@ SEQ_LEN = 20                # number of frames in sequence window
 TOTAL_FRAMES = 10000
 MODEL_PATH = "homeostasis_model.h5"
 FEEDBACK_FILE = "feedback.pkl"
-# NORMAL_DATA = []            # for feedback retraining
-# ANOMALY_DATA = []
+NORMAL_DATA = []            # for feedback retraining
+ANOMALY_DATA = []
 ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
 # MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
 EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
 INPUT_SHAPE = (224, 224, 3)
 print("Configuration done!")
 
+buffer = deque(maxlen=SEQ_LEN)
 
+
+
+### SETUP ###
+# Load previous feedback data if it exists
+answer = input("Do you want to include past feedback data?").strip().upper()
+if os.path.exists(FEEDBACK_FILE) and answer == "Y":
+    try:
+        with open(FEEDBACK_FILE, "rb") as f:
+            NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
+    except EOFError:
+        NORMAL_DATA, ANOMALY_DATA = [], []
+else:
+    NORMAL_DATA, ANOMALY_DATA = [], []
+print("Feedback file loaded")
 
 class NormalDataTraining(fsm.State):
     def __init__(self, FSM):
@@ -35,10 +51,33 @@ class NormalDataTraining(fsm.State):
         pass
 
     def Enter(self):
-        pass
+        print("Normal Feedback Data Mode")
+        num_frames = 0
     
     def Execute(self):
-        pass
+        # Train on only normal feedback
+        ret, frame = cap.read()
+        if not ret:
+            print("Unsuccessful frame capture. Going to Menu...")
+            self.ChangeState(self.FSM, "toMenu", "Menu")
+        feat = extract_feature(frame)
+        buffer.append(feat)
+        if len(buffer) == SEQ_LEN:
+            NORMAL_DATA.append(np.stack(buffer))
+        
+        cv2.putText(frame, f"{num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
+        cv2.imshow("Anomaly Detector", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord('q'):
+            self.FSM.SetState("")
+            self.FSM.Transition("")
+        elif key == ord('x'):
+            with open(FEEDBACK_FILE, 'wb') as f:
+                pass
+        num_frames+=1
+
+
     def Exit(self):
         pass
 
@@ -48,28 +87,63 @@ class WipingModelAndFeedback(fsm.State):
         self.MODEL_PATH = MODEL_PATH
     
 class Menu(fsm.State):
-    pass
+    def __init__(self, FSM):
+        self.FSM = FSM
+    
+    def Enter(self):
+        print("**Select from the following:**")
+        print("Wipe Model and Feedback:/t W")
+        print("Save Feedback and Retrain Model:/t S")
+        print("Take in Normal Training Data:/t N")
+        print("Give User Input on Normal and Abnormal Scenes:/t F")
+
+            
+    def Execute(self):
+        answer = input("").strip().upper()
+        if answer == "W":
+            self.ChangeState(self.FSM, "toWipingModelAndFeedback", "WipingModelAndFeedback")
+        elif answer == "S":
+            self.ChangeState(self.FSM, "toSavingModelAndFeedback", "SavingModelAndFeedback")
+        elif answer == "N":
+            self.ChangeState(self.FSM, "toNormalDataTraining", "NormalDataTraining")
+        elif answer == "F":
+            self.ChangeState(self.FSM, "toRLHF", "RLHF")
+        else:
+            print("Invalid input. Try again.")
+
+    def Exit(self):
+        pass
+
+
         
 
 class SavingModelAndFeedback(fsm.State):
-    pass
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH):
+        self.FEEDBACK_FILE = FEEDBACK_FILE
+        self.MODEL_PATH = MODEL_PATH
 
 class RLHF(fsm.State):
     pass
 
+class HS_Model:
+    def __init__(self):
+        self.FSM = fsm.FSM(self)
+
+hs_model = HS_Model()
+hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM)
+hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM)
+hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM)
+hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM)
+hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
+hs_model.FSM.transitions["toMenu"] = fsm.Transition()
+hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition()
+hs_model.FSM.transitions["toRLHF"] = fsm.Transition()
+hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition()
+hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition()
 
 
 
-# Load previous feedback data if it exists
-if os.path.exists(FEEDBACK_FILE):
-    try:
-        with open(FEEDBACK_FILE, "rb") as f:
-            NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
-    except EOFError:
-        NORMAL_DATA, ANOMALY_DATA = [], []
-else:
-    NORMAL_DATA, ANOMALY_DATA = [], []
-print("Feedback file loaded")
+
 
 # Load visual feature extractor
 FEATURE_URL = EFFICIENT_NET_B0
@@ -112,34 +186,34 @@ else:
     raise RuntimeError("No USB camera found.")
 print("Found Camera! Training will now begin...")
 
-# Train on only normal feedback
-buffer = deque(maxlen=SEQ_LEN)
-num_frames = -1
-while num_frames < TOTAL_FRAMES:
-    ret, frame = cap.read()
-    if not ret:
-        break
-    feat = extract_feature(frame)
-    buffer.append(feat)
-    if len(buffer) == SEQ_LEN:
-        NORMAL_DATA.append(np.stack(buffer))
+# # Train on only normal feedback
+# buffer = deque(maxlen=SEQ_LEN)
+# num_frames = -1
+# while num_frames < TOTAL_FRAMES:
+#     ret, frame = cap.read()
+#     if not ret:
+#         break
+#     feat = extract_feature(frame)
+#     buffer.append(feat)
+#     if len(buffer) == SEQ_LEN:
+#         NORMAL_DATA.append(np.stack(buffer))
     
-    cv2.putText(frame, f"{num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
-    cv2.imshow("Anomaly Detector", frame)
-    key = cv2.waitKey(1) & 0xFF
+#     cv2.putText(frame, f"{num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
+#     cv2.imshow("Anomaly Detector", frame)
+#     key = cv2.waitKey(1) & 0xFF
 
-    if key == ord('q'):
-        break
-    elif key == ord('x'):
-        with open(FEEDBACK_FILE, 'wb') as f:
-            pass
+#     if key == ord('q'):
+#         break
+#     elif key == ord('x'):
+#         with open(FEEDBACK_FILE, 'wb') as f:
+#             pass
 
-    num_frames+=1
-print("Done collecting data")
-X = np.array(NORMAL_DATA)
-y = np.array([0]* len(NORMAL_DATA))
-temporal_model.fit(X, y, epochs=5, batch_size=4)
-temporal_model.save(MODEL_PATH)
+#     num_frames+=1
+# print("Done collecting data")
+# X = np.array(NORMAL_DATA)
+# y = np.array([0]* len(NORMAL_DATA))
+# temporal_model.fit(X, y, epochs=5, batch_size=4)
+# temporal_model.save(MODEL_PATH)
 
 
 # Test and RHLF loop

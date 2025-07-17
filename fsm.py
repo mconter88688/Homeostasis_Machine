@@ -11,7 +11,11 @@ class Transition:
 
 ## States ##
 class State:
-    pass
+    
+    def ChangeState(FSM, transName, stateName):
+        FSM.curTrans = FSM.transitions[transName]
+        FSM.curState = FSM.states[stateName]
+
 
 ## Finite State Machine ##
 class FSM:
