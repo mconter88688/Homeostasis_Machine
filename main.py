@@ -53,7 +53,7 @@ def build_model():
     m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return m
 
-answer = input("Do you want to use your saved model?")
+answer = input("Do you want to use your saved model?").strip().upper()
 if os.path.exists(MODEL_PATH) and answer == "Y":
     print("Loading old model...")
     temporal_model = load_model(MODEL_PATH) # function imported from tensorflow.keras.models
@@ -148,15 +148,18 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 
-# If new data labeled, retrain
-if NORMAL_DATA or ANOMALY_DATA:
-    print("Retraining model with feedback data...")
-    # Create training sets
-    X = np.array(NORMAL_DATA + ANOMALY_DATA)
-    y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-    temporal_model.fit(X, y, epochs=5, batch_size=4)
-    temporal_model.save(MODEL_PATH)
-    print("Model updated and saved.")
+answer = input("Do you want to save feedback files and train the new model?").strip().upper()
 
-with open(FEEDBACK_FILE, "wb") as f:
-    pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
+if answer == "Y":
+    # If new data labeled, retrain
+    if NORMAL_DATA or ANOMALY_DATA:
+        print("Retraining model with feedback data...")
+        # Create training sets
+        X = np.array(NORMAL_DATA + ANOMALY_DATA)
+        y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
+        temporal_model.fit(X, y, epochs=5, batch_size=4)
+        temporal_model.save(MODEL_PATH)
+        print("Model updated and saved.")
+
+    with open(FEEDBACK_FILE, "wb") as f:
+        pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
