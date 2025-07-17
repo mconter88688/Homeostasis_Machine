@@ -12,7 +12,7 @@ class Transition:
 ## States ##
 class State:
     
-    def ChangeState(FSM, transName, stateName):
+    def ChangeState(self, FSM, transName, stateName):
         FSM.curTrans = FSM.transitions[transName]
         FSM.curState = FSM.states[stateName]
 
@@ -25,7 +25,7 @@ class FSM:
         self.transitions = {}
         self.curState = None
         self.prevState = None
-        self.cureTrans = None
+        self.curTrans = None
 
     def SetState(self, stateName):
         self.prevState = self.curState
@@ -46,3 +46,6 @@ class FSM:
         self.curState.Execute()
         
 
+class HS_Model:
+    def __init__(self):
+        self.FSM = FSM(self)
