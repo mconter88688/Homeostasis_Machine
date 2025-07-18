@@ -59,8 +59,20 @@ def build_model():
     # ])
     # m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     # return m
+    # model = Sequential([
+    #     Bidirectional(LSTM(128, return_sequences=True), input_shape=(SEQ_LEN, FEATURE_DIM)),
+    #     BatchNormalization(),
+    #     Dropout(0.3),
+    #     LSTM(64),
+    #     BatchNormalization(),
+    #     Dropout(0.3),
+    #     Dense(32, activation='relu'),
+    #     Dense(1, activation='sigmoid')
+    # ])
+    # model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # return model
     model = Sequential([
-        Bidirectional(LSTM(128, return_sequences=True), input_shape=(SEQ_LEN, FEATURE_DIM)),
+        LSTM(128, input_shape=(SEQ_LEN, FEATURE_DIM), return_sequences=True),
         BatchNormalization(),
         Dropout(0.3),
         LSTM(64),
