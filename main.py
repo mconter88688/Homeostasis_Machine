@@ -129,8 +129,8 @@ class WipingModelAndFeedback(fsm.State):
         print("Deleting model and feedback data")
     
     def Execute(self):
-        self.NORMAL_DATA = []
-        self.ANOMALY_DATA = []
+        self.NORMAL_DATA.clear()
+        self.ANOMALY_DATA.clear()
         
         with open(FEEDBACK_FILE, "wb") as f:
             pass
