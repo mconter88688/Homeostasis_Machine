@@ -7,37 +7,13 @@ class Transition:
         self.toState = toState
 
     def Execute(self):
+        #print("Transitioning!")
         pass
 
 ## States ##
 class State:
     pass
 
-class NormalDataTraining(State):
-    def __init__(self, FSM):
-        self.FSM = FSM
-        pass
-
-    def Enter(self):
-        pass
-    
-    def Execute(self):
-        pass
-    def Exit(self):
-        pass
-
-class WipingModelAndFeedback(State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH):
-        self.FEEDBACK_FILE = FEEDBACK_FILE
-        self.MODEL_PATH = MODEL_PATH
-    
-    
-
-class SavingModelAndFeedback(State):
-    pass
-
-class RLHF(State):
-    pass
 
 ## Finite State Machine ##
 class FSM:
@@ -47,7 +23,7 @@ class FSM:
         self.transitions = {}
         self.curState = None
         self.prevState = None
-        self.cureTrans = None
+        self.curTrans = None
 
     def SetState(self, stateName):
         self.prevState = self.curState
@@ -58,13 +34,20 @@ class FSM:
 
     def Execute(self):
         if self.curTrans != None:
-            self.curState.Exit()
+            if self.curState != None:
+                #print("Exit")
+                self.curState.Exit()
+            #print("Execute")
             self.curTrans.Execute()
             self.SetState(self.curTrans.toState)
             self.curTrans = None
         if self.curState != self.prevState:
+            #print("Enter")
             self.curState.Enter()
             self.prevState = self.curState
         self.curState.Execute()
         
 
+class HS_Model:
+    def __init__(self):
+        self.FSM = FSM(self)
