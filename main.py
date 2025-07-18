@@ -16,11 +16,11 @@ print("Starting configuration!")
 #CAM_INDEX              # USB camera index
 FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
-TOTAL_FRAMES = 10000
+#TOTAL_FRAMES = 10000
 MODEL_PATH = "homeostasis_model.h5"
 FEEDBACK_FILE = "feedback.pkl"
-NORMAL_DATA = []            # for feedback retraining
-ANOMALY_DATA = []
+#NORMAL_DATA = []            # for feedback retraining
+#ANOMALY_DATA = []
 ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
 # MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
 EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
@@ -82,9 +82,10 @@ print("Camera Found!")
 
 
 class NormalDataTraining(fsm.State):
-    def __init__(self, FSM):
+    def __init__(self, FSM, NORMAL_DATA):
         self.FSM = FSM
         self.num_frames = 0
+        self.NORMAL_DATA = NORMAL_DATA
 
     def Enter(self):
         print("Normal Feedback Data Mode")
@@ -101,7 +102,7 @@ class NormalDataTraining(fsm.State):
         feat = extract_feature(frame)
         buffer.append(feat)
         if len(buffer) == SEQ_LEN:
-            NORMAL_DATA.append(np.stack(buffer))
+            self.NORMAL_DATA.append(np.stack(buffer))
         
         cv2.putText(frame, f"{self.num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
         cv2.imshow("Anomaly Detector", frame)
@@ -117,17 +118,19 @@ class NormalDataTraining(fsm.State):
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, NORMAL_DATA, ANOMALY_DATA):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
+        self.NORMAL_DATA = NORMAL_DATA
+        self.ANOMALY_DATA = ANOMALY_DATA
 
     def Enter(self):
         print("Deleting model and feedback data")
     
     def Execute(self):
-        NORMAL_DATA = []
-        ANOMALY_DATA = []
+        self.NORMAL_DATA = []
+        self.ANOMALY_DATA = []
         
         with open(FEEDBACK_FILE, "wb") as f:
             pass
@@ -173,26 +176,28 @@ class Menu(fsm.State):
 
 
 class SavingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, NORMAL_DATA, ANOMALY_DATA):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
+        self.NORMAL_DATA = NORMAL_DATA
+        self.ANOMALY_DATA = ANOMALY_DATA
     
     def Enter(self):
         print("Saving Model and Feedback File")
 
     def Execute(self):
-        if NORMAL_DATA or ANOMALY_DATA:
+        if self.NORMAL_DATA or self.ANOMALY_DATA:
             print("Retraining model with feedback data...")
             # Create training sets
-            X = np.array(NORMAL_DATA + ANOMALY_DATA)
-            y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
+            X = np.array(self.NORMAL_DATA + self.ANOMALY_DATA)
+            y = np.array([0]*len(self.NORMAL_DATA) + [1]*len(self.ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             temporal_model.fit(X, y, epochs=5, batch_size=4)
             temporal_model.save(MODEL_PATH)
             print("Model updated and saved.")
 
         with open(FEEDBACK_FILE, "wb") as f:
-            pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
+            pickle.dump((self.NORMAL_DATA, self.ANOMALY_DATA), f)
         
         self.FSM.Transition("toMenu")
         return
@@ -201,8 +206,10 @@ class SavingModelAndFeedback(fsm.State):
         pass
 
 class RLHF(fsm.State):
-    def __init__(self, FSM):
+    def __init__(self, FSM, NORMAL_DATA, ANOMALY_DATA):
         self.FSM = FSM
+        self.NORMAL_DATA = NORMAL_DATA
+        self.ANOMALY_DATA = ANOMALY_DATA
 
     def Enter(self):
         print("Human Feedback Mode")
@@ -235,10 +242,10 @@ class RLHF(fsm.State):
             self.FSM.Transition("toMenu")
             return
         elif key == ord('n') and len(buffer) == SEQ_LEN:
-            NORMAL_DATA.append(np.stack(buffer))
+            self.NORMAL_DATA.append(np.stack(buffer))
             print("Labeled one normal sequence")
         elif key == ord('a') and len(buffer) == SEQ_LEN:
-            ANOMALY_DATA.append(np.stack(buffer))
+            self.ANOMALY_DATA.append(np.stack(buffer))
             print("Labeled one anomalous sequence")
 
     def Exit(self):
@@ -248,10 +255,10 @@ class RLHF(fsm.State):
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM)
-hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM)
-hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM)
-hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM)
+hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM, NORMAL_DATA)
+hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
+hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
+hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
