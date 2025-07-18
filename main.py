@@ -1,64 +1,65 @@
-import cv2 # for camera
-import numpy as np # for arrays
-import tensorflow as tf # for TensorFlow
-import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
-from tensorflow.keras.models import Sequential, load_model # for model architecture and loading
-from tensorflow.keras.layers import LSTM, Dense # for neural network layers
-from collections import deque # for sliding window
-import os # file and directory management
+import cv2
+import numpy as np
+import tensorflow as tf
+import tensorflow_hub as hub
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from collections import deque
+import os
 import pickle
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
-# CONFIGURATION
-#CAM_INDEX              # USB camera index
 FEATURE_DIM = 1280
-SEQ_LEN = 20                # number of frames in sequence window
+SEQ_LEN = 20
 TOTAL_FRAMES = 1000
 MODEL_PATH = "homeostasis_model.h5"
+BEST_MODEL_PATH = "best_model.h5"
 FEEDBACK_FILE = "feedback.pkl"
-# NORMAL_DATA = []            # for feedback retraining
-# ANOMALY_DATA = []
-ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
-# MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
+ANOMALY_THRESHOLD = 0.6
 EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
 INPUT_SHAPE = (224, 224, 3)
-
 
 # Load previous feedback data if it exists
 if os.path.exists(FEEDBACK_FILE):
     with open(FEEDBACK_FILE, "rb") as f:
         NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
 else:
-  NORMAL_DATA, ANOMALY_DATA = [], []
-
+    NORMAL_DATA, ANOMALY_DATA = [], []
 
 # Load visual feature extractor
-FEATURE_URL = EFFICIENT_NET_B0
-feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= INPUT_SHAPE, trainable=False)
+feature_extractor = hub.KerasLayer(EFFICIENT_NET_B0, input_shape=INPUT_SHAPE, trainable=False)
 
-# Build or load temporal model
+# Build improved temporal model
 def build_model():
-    m = Sequential([
-        LSTM(128, input_shape=(SEQ_LEN, FEATURE_DIM), return_sequences=True), # return_sequences=True means the full sequence is sent to the next LSTM instead of just the final step
+    model = Sequential([
+        Bidirectional(LSTM(128, return_sequences=True), input_shape=(SEQ_LEN, FEATURE_DIM)),
+        BatchNormalization(),
+        Dropout(0.3),
         LSTM(64),
-        Dense(32, activation='relu'), # lightweight classifier layer
-        Dense(1, activation='sigmoid') # binary classification layer
+        BatchNormalization(),
+        Dropout(0.3),
+        Dense(32, activation='relu'),
+        Dense(1, activation='sigmoid')
     ])
-    m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    return m
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
 
+# Load or initialize model
 if os.path.exists(MODEL_PATH):
-    temporal_model = load_model(MODEL_PATH) # function imported from tensorflow.keras.models
+    temporal_model = load_model(MODEL_PATH)
 else:
     temporal_model = build_model()
 
-# Helper: extract feature from single frame
+# Feature extraction helper
 def extract_feature(frame):
-    resized = cv2.resize(frame, (INPUT_SHAPE[1], INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
-    tensor = tf.expand_dims(resized.astype(np.float32), axis=0) # add batch dimension and convert numbers to floats
-    feats = feature_extractor(tensor) # use feature extractor on adjusted frame
-    return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
+    resized = cv2.resize(frame, (INPUT_SHAPE[1], INPUT_SHAPE[0])) / 255.0
+    tensor = tf.expand_dims(resized.astype(np.float32), axis=0)
+    feats = feature_extractor(tensor)
+    return tf.squeeze(feats).numpy()
 
-# Get the camera on the lowest-numbered USB port (loop through all the USB port numbers)
+# Get camera index
 for cam in range(5):
     cap = cv2.VideoCapture(cam)
     if cap.isOpened():
@@ -67,48 +68,84 @@ for cam in range(5):
 else:
     raise RuntimeError("No USB camera found.")
 
-# Train on only normal feedback
+# Collect initial training data (normal sequences)
 buffer = deque(maxlen=SEQ_LEN)
-num_frames = -1
-while num_frames < total_frames:
-  ret, frame = cap.read()
-  if not ret:
-    break
-  feat = extract_feature(frame)
-  buffer.append(feat)
-  if len(buffer) == SEQ_LEN:
-    NORMAL_DATA.append(np.stack(buffer))
+num_frames = 0
+while num_frames < TOTAL_FRAMES:
+    ret, frame = cap.read()
+    if not ret:
+        break
+    feat = extract_feature(frame)
+    buffer.append(feat)
+    if len(buffer) == SEQ_LEN:
+        NORMAL_DATA.append(np.stack(buffer))
+    num_frames += 1
+
+# Train on normal data
 X = np.array(NORMAL_DATA)
-y = np.array([0]* len(NORMAL_DATA))
-temporal_model.fit(X, y, epochs=5, batch=4)
+y = np.array([0] * len(NORMAL_DATA))
+
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+callbacks = [
+    EarlyStopping(patience=3, restore_best_weights=True),
+    ModelCheckpoint(BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
+]
+
+history = temporal_model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=20,
+    batch_size=4,
+    callbacks=callbacks,
+    verbose=1
+)
+
 temporal_model.save(MODEL_PATH)
 
+# Plot training & validation loss and accuracy
+plt.figure(figsize=(10, 4))
 
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title('Loss Over Epochs')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
 
+plt.subplot(1, 2, 2)
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title('Accuracy Over Epochs')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
 
+plt.tight_layout()
+plt.show()
 
+# Live prediction and feedback loop
+print("Press 'n' to label homeostasis, 'a' for anomaly, 'q' to quit.")
+buffer = deque(maxlen=SEQ_LEN)
 
-
-#Test and RHLF loop
-print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
     feat = extract_feature(frame)
-    buffer.append(feat) # add 1D array to end of the buffer
+    buffer.append(feat)
 
     label = "N/A"
     if len(buffer) == SEQ_LEN:
-        seq = np.expand_dims(np.stack(buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
-        pred = temporal_model.predict(seq, verbose=0)[0][0] # gets the number spit out by the temporal model
-        is_anomaly = pred > ANOMALY_THRESHOLD #checks prediction against threshold
+        seq = np.expand_dims(np.stack(buffer), axis=0)
+        pred = temporal_model.predict(seq, verbose=0)[0][0]
+        is_anomaly = pred > ANOMALY_THRESHOLD
         label = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
-        color = (0,0,255) if is_anomaly else (0,255,0)
+        color = (0, 0, 255) if is_anomaly else (0, 255, 0)
 
-        # Draw on frame
-        cv2.putText(frame, label, (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        cv2.putText(frame, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
     cv2.imshow("Anomaly Detector", frame)
     key = cv2.waitKey(1) & 0xFF
@@ -122,19 +159,54 @@ while True:
         ANOMALY_DATA.append(np.stack(buffer))
         print("Labeled one anomalous sequence")
 
-# Clean up
+# Cleanup
 cap.release()
 cv2.destroyAllWindows()
 
-# If new data labeled, retrain
+# Retrain if new data was labeled
 if NORMAL_DATA or ANOMALY_DATA:
-    print("Retraining model with feedback data...")
-    # Create training sets
+    print("Retraining with labeled feedback...")
     X = np.array(NORMAL_DATA + ANOMALY_DATA)
-    y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-    temporal_model.fit(X, y, epochs=5, batch_size=4)
+    y = np.array([0]*len(NORMAL_DATA) + [1]*len(ANOMALY_DATA))
+
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    history = temporal_model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=20,
+        batch_size=4,
+        callbacks=callbacks,
+        verbose=1
+    )
+
     temporal_model.save(MODEL_PATH)
+
+    # Plot updated training
+    plt.figure(figsize=(10, 4))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['loss'], label='Train Loss')
+    plt.plot(history.history['val_loss'], label='Val Loss')
+    plt.title('Loss Over Epochs (Retrained)')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['accuracy'], label='Train Acc')
+    plt.plot(history.history['val_accuracy'], label='Val Acc')
+    plt.title('Accuracy Over Epochs (Retrained)')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
     print("Model updated and saved.")
 
+# Save feedback
 with open(FEEDBACK_FILE, "wb") as f:
     pickle.dump((NORMAL_DATA, ANOMALY_DATA), f)
+
