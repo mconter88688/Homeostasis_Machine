@@ -3,8 +3,7 @@ import cv2 # for camera
 import numpy as np # for arrays
 import tensorflow as tf # for TensorFlow
 import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
-from tensorflow.keras.models import Sequential, load_model # for model architecture and loading
-from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional # for neural network layers
+from tensorflow.keras.models import load_model # for model architecture and loading
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from collections import deque # for sliding window
 import os # file and directory management
@@ -41,38 +40,7 @@ print("Feature extractor loaded")
 
 # Build or load temporal model
 def build_model():
-    # m = Sequential([
-    #     LSTM(128, input_shape=(SEQ_LEN, FEATURE_DIM), return_sequences=True), # return_sequences=True means the full sequence is sent to the next LSTM instead of just the final step
-    #     LSTM(64),
-    #     Dense(32, activation='relu'), # lightweight classifier layer
-    #     Dense(1, activation='sigmoid') # binary classification layer
-    # ])
-    # m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    # return m
-    # model = Sequential([
-    #     Bidirectional(LSTM(128, return_sequences=True), input_shape=(SEQ_LEN, FEATURE_DIM)),
-    #     BatchNormalization(),
-    #     Dropout(0.3),
-    #     LSTM(64),
-    #     BatchNormalization(),
-    #     Dropout(0.3),
-    #     Dense(32, activation='relu'),
-    #     Dense(1, activation='sigmoid')
-    # ])
-    # model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    # return model
-    model = Sequential([
-        LSTM(128, input_shape=(cons.SEQ_LEN, cons.FEATURE_DIM), return_sequences=True),
-        BatchNormalization(),
-        Dropout(0.3),
-        LSTM(64),
-        BatchNormalization(),
-        Dropout(0.3),
-        Dense(32, activation='relu'),
-        Dense(1, activation='sigmoid')
-    ])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    return model
+    return mod.build_one_way_7_18()
 
 if os.path.exists(cons.MODEL_PATH):
     temporal_model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models

@@ -1,5 +1,5 @@
 import constants as cons
-from tensorflow.keras.models import Sequential, load_model # for model architecture and loading
+from tensorflow.keras.models import Sequential # for model architecture and loading
 from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional # for neural network layers
 
 
@@ -13,3 +13,31 @@ def build_simple_7_17():
     ])
     m.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return m
+
+def build_bi_7_18():
+    model = Sequential([
+        Bidirectional(LSTM(128, return_sequences=True), input_shape=(SEQ_LEN, FEATURE_DIM)),
+        BatchNormalization(),
+        Dropout(0.3),
+        LSTM(64),
+        BatchNormalization(),
+        Dropout(0.3),
+        Dense(32, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+def build_one_way_7_18():
+    model = Sequential([
+        LSTM(128, input_shape=(cons.SEQ_LEN, cons.FEATURE_DIM), return_sequences=True),
+        BatchNormalization(),
+        Dropout(0.3),
+        LSTM(64),
+        BatchNormalization(),
+        Dropout(0.3),
+        Dense(32, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
