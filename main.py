@@ -172,18 +172,49 @@ class SavingModelAndFeedback(fsm.State):
         print("Saving Model and Feedback File")
 
     def Execute(self):
+        # Retrain model
+        callbacks = [
+                        EarlyStopping(patience=3, restore_best_weights=True),
+                        ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
+                    ]
+        
+        
         if self.NORMAL_DATA or self.ANOMALY_DATA:
             print("Retraining model with feedback data...")
             # Create training sets
             X = np.array(self.NORMAL_DATA + self.ANOMALY_DATA)
             y = np.array([0]*len(self.NORMAL_DATA) + [1]*len(self.ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-            temporal_model.fit(X, y, epochs=5, batch_size=4)
+            history = temporal_model.fit(X, y, validation_split = 0.2, shuffle=True, epochs=5, batch_size=4, callbacks=callbacks)
             temporal_model.save(cons.MODEL_PATH)
             print("Model updated and saved.")
 
+            answer = input("Would you like to graph the data? (Y/N)").strip().upper()
+            if answer == "Y":
+                # Plot training & validation loss and accuracy
+                plt.figure(figsize=(10, 4))
+
+                plt.subplot(1, 2, 1)
+                plt.plot(history.history['loss'], label='Train Loss')
+                plt.plot(history.history['val_loss'], label='Val Loss')
+                plt.title('Loss Over Epochs')
+                plt.xlabel('Epoch')
+                plt.ylabel('Loss')
+                plt.legend()
+
+                plt.subplot(1, 2, 2)
+                plt.plot(history.history['accuracy'], label='Train Acc')
+                plt.plot(history.history['val_accuracy'], label='Val Acc')
+                plt.title('Accuracy Over Epochs')
+                plt.xlabel('Epoch')
+                plt.ylabel('Accuracy')
+                plt.legend()
+
+                plt.tight_layout()
+                plt.show()
+        # Save feedback into file
         with open(cons.FEEDBACK_FILE, "wb") as f:
             pickle.dump((self.NORMAL_DATA, self.ANOMALY_DATA), f)
-        
+
         self.FSM.Transition("toMenu")
         return
 

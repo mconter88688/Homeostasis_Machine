@@ -2,6 +2,7 @@ FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
 #TOTAL_FRAMES = 10000
 MODEL_PATH = "homeostasis_model.h5"
+BEST_MODEL_PATH = "best_model.h5"
 FEEDBACK_FILE = "feedback.pkl"
 #NORMAL_DATA = []            # for feedback retraining
 #ANOMALY_DATA = []
