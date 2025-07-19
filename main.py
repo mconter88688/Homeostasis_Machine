@@ -11,32 +11,23 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from collections import deque # for sliding window
 import os # file and directory management
 import pickle
+from constants import cons
 
 # CONFIGURATION
 print("Starting configuration!")
 #CAM_INDEX              # USB camera index
-FEATURE_DIM = 1280
-SEQ_LEN = 20                # number of frames in sequence window
-#TOTAL_FRAMES = 10000
-MODEL_PATH = "homeostasis_model.h5"
-FEEDBACK_FILE = "feedback.pkl"
-#NORMAL_DATA = []            # for feedback retraining
-#ANOMALY_DATA = []
-ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
-# MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
-EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
-INPUT_SHAPE = (224, 224, 3)
+
 print("Configuration done!")
 
-buffer = deque(maxlen=SEQ_LEN)
+buffer = deque(maxlen=cons.SEQ_LEN)
 
 
 
 ### SETUP ###
 # Load previous feedback data if it exists
-if os.path.exists(FEEDBACK_FILE):
+if os.path.exists(cons.FEEDBACK_FILE):
     try:
-        with open(FEEDBACK_FILE, "rb") as f:
+        with open(cons.FEEDBACK_FILE, "rb") as f:
             NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
     except EOFError:
         NORMAL_DATA, ANOMALY_DATA = [], []
@@ -45,8 +36,8 @@ else:
 print("Feedback file loaded")
 
 # Load visual feature extractor
-FEATURE_URL = EFFICIENT_NET_B0
-feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= INPUT_SHAPE, trainable=False)
+FEATURE_URL = cons.EFFICIENT_NET_B0
+feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
 print("Feature extractor loaded")
 
 # Build or load temporal model
@@ -72,7 +63,7 @@ def build_model():
     # model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     # return model
     model = Sequential([
-        LSTM(128, input_shape=(SEQ_LEN, FEATURE_DIM), return_sequences=True),
+        LSTM(128, input_shape=(cons.SEQ_LEN, cons.FEATURE_DIM), return_sequences=True),
         BatchNormalization(),
         Dropout(0.3),
         LSTM(64),
@@ -84,14 +75,14 @@ def build_model():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-if os.path.exists(MODEL_PATH):
-    temporal_model = load_model(MODEL_PATH) # function imported from tensorflow.keras.models
+if os.path.exists(cons.MODEL_PATH):
+    temporal_model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models
 else:
     temporal_model = build_model()
 
 # Helper: extract feature from single frame
 def extract_feature(frame):
-    resized = cv2.resize(frame, (INPUT_SHAPE[1], INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
+    resized = cv2.resize(frame, (cons.INPUT_SHAPE[1], cons.INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
     tensor = tf.expand_dims(resized.astype(np.float32), axis=0) # add batch dimension and convert numbers to floats
     feats = feature_extractor(tensor) # use feature extractor on adjusted frame
     return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
@@ -126,7 +117,7 @@ class NormalDataTraining(fsm.State):
             return
         feat = extract_feature(frame)
         buffer.append(feat)
-        if len(buffer) == SEQ_LEN:
+        if len(buffer) == cons.SEQ_LEN:
             self.NORMAL_DATA.append(np.stack(buffer))
         
         cv2.putText(frame, f"{self.num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
@@ -157,7 +148,7 @@ class WipingModelAndFeedback(fsm.State):
         self.NORMAL_DATA.clear()
         self.ANOMALY_DATA.clear()
         
-        with open(FEEDBACK_FILE, "wb") as f:
+        with open(cons.FEEDBACK_FILE, "wb") as f:
             pass
 
         if os.path.exists(self.MODEL_PATH):
@@ -218,10 +209,10 @@ class SavingModelAndFeedback(fsm.State):
             X = np.array(self.NORMAL_DATA + self.ANOMALY_DATA)
             y = np.array([0]*len(self.NORMAL_DATA) + [1]*len(self.ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             temporal_model.fit(X, y, epochs=5, batch_size=4)
-            temporal_model.save(MODEL_PATH)
+            temporal_model.save(cons.MODEL_PATH)
             print("Model updated and saved.")
 
-        with open(FEEDBACK_FILE, "wb") as f:
+        with open(cons.FEEDBACK_FILE, "wb") as f:
             pickle.dump((self.NORMAL_DATA, self.ANOMALY_DATA), f)
         
         self.FSM.Transition("toMenu")
@@ -250,10 +241,10 @@ class RLHF(fsm.State):
         buffer.append(feat) # add 1D array to end of the buffer
 
         label = "N/A"
-        if len(buffer) == SEQ_LEN:
+        if len(buffer) == cons.SEQ_LEN:
             seq = np.expand_dims(np.stack(buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
             pred = temporal_model.predict(seq, verbose=0)[0][0] # gets the number spit out by the temporal model
-            is_anomaly = pred > ANOMALY_THRESHOLD #checks prediction against threshold
+            is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
             label = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
             color = (0,0,255) if is_anomaly else (0,255,0)
 
@@ -266,10 +257,10 @@ class RLHF(fsm.State):
         if key == ord('q'):
             self.FSM.Transition("toMenu")
             return
-        elif key == ord('n') and len(buffer) == SEQ_LEN:
+        elif key == ord('n') and len(buffer) == cons.SEQ_LEN:
             self.NORMAL_DATA.append(np.stack(buffer))
             print("Labeled one normal sequence")
-        elif key == ord('a') and len(buffer) == SEQ_LEN:
+        elif key == ord('a') and len(buffer) == cons.SEQ_LEN:
             self.ANOMALY_DATA.append(np.stack(buffer))
             print("Labeled one anomalous sequence")
 
@@ -282,8 +273,8 @@ print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
 hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM, NORMAL_DATA)
 hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
-hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
-hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(FEEDBACK_FILE, MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
+hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
+hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
