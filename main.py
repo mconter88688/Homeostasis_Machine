@@ -10,7 +10,7 @@ import os # file and directory management
 import pickle
 import constants as cons
 import models as mod
-# from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 # import matplotlib.pyplot as plt
 
 # CONFIGURATION
