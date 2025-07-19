@@ -13,6 +13,5 @@ fi
 echo "Running Python Script"
 python3 $PYTHON_SCRIPT
 
-echo "Deactivating Virtual Env"
-deactivate
+
 
