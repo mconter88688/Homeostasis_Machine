@@ -11,7 +11,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from collections import deque # for sliding window
 import os # file and directory management
 import pickle
-from constants import cons
+import constants as cons
 
 # CONFIGURATION
 print("Starting configuration!")
