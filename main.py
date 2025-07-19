@@ -10,6 +10,7 @@ from collections import deque # for sliding window
 import os # file and directory management
 import pickle
 import constants as cons
+import models as mod
 
 # CONFIGURATION
 print("Starting configuration!")
