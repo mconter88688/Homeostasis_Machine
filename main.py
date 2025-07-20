@@ -35,6 +35,19 @@ else:
     NORMAL_DATA, ANOMALY_DATA = [], []
 print("Feedback file loaded")
 
+# Ensure the model folder is in the directory
+model_folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER)
+if not os.path.exists(model_folder_path):
+    os.makedirs(model_folder_path)
+print("Model folder exists!")
+
+# Ensure the data folder is in the directory
+data_folder_path = os.path.join(os.getcwd(), cons.DATA_FOLDER)
+if not os.path.exists(data_folder_path):
+    os.makedirs(data_folder_path)
+print("Feedback folder exists!")
+
+
 # Load visual feature extractor
 FEATURE_URL = cons.EFFICIENT_NET_B0
 feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
