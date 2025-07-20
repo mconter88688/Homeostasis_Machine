@@ -16,7 +16,7 @@ def build_simple_7_17():
 
 def build_bi_7_18():
     model = Sequential([
-        Bidirectional(LSTM(128, return_sequences=True), input_shape=(SEQ_LEN, FEATURE_DIM)),
+        Bidirectional(LSTM(128, return_sequences=True), input_shape=(cons.SEQ_LEN, cons.FEATURE_DIM)),
         BatchNormalization(),
         Dropout(0.3),
         LSTM(64),
