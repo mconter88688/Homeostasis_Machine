@@ -240,6 +240,24 @@ class SavingModelAndFeedback(fsm.State):
         pass
 
 
+class LoadModel(fsm.State):
+    def __init__(self, FSM, model_params):
+        self.FSM = FSM
+        self.model_params = model_params
+
+    def Enter(self):
+        # show all model names
+        pass
+
+    def Execute(self):
+        input()
+        temporal_model
+
+    def Exit(self):
+        pass
+
+    
+
 class DocumentModel(fsm.State):
     def __init__(self, FSM, model_params):
         self.FSM = FSM
