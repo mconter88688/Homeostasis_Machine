@@ -202,7 +202,7 @@ class SavingModelAndFeedback(fsm.State):
             # Create training sets
             X = np.array(self.NORMAL_DATA + self.ANOMALY_DATA)
             y = np.array([0]*len(self.NORMAL_DATA) + [1]*len(self.ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-            history = temporal_model.fit(X, y, validation_split = 0.2, shuffle=True, epochs=5, batch_size=4, callbacks=callbacks)
+            history = temporal_model.fit(X, y, validation_split = self.model_params.validation_split, shuffle=True, epochs=self.model_params.epochs, batch_size=self.model_params.batch_size, callbacks=callbacks)
             temporal_model.save(cons.MODEL_PATH)
             print("Model updated and saved.")
 
