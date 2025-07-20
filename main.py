@@ -21,8 +21,6 @@ print("Configuration done!")
 
 buffer = deque(maxlen=cons.SEQ_LEN)
 
-
-
 ### SETUP ###
 # Load previous feedback data if it exists
 if os.path.exists(cons.FEEDBACK_FILE):
@@ -34,6 +32,9 @@ if os.path.exists(cons.FEEDBACK_FILE):
 else:
     NORMAL_DATA, ANOMALY_DATA = [], []
 print("Feedback file loaded")
+
+# Class instance for model parameters
+model_params = mod.ModelConfigParam
 
 # Ensure the model folder is in the directory
 model_folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER)
@@ -233,6 +234,36 @@ class SavingModelAndFeedback(fsm.State):
 
     def Exit(self):
         pass
+
+
+class DocumentModel(fsm.State):
+    def __init__(self, FSM):
+        self.FSM = FSM
+
+    def Enter(self):
+        pass
+
+    def Execute(self):
+        good_file = False
+        while not good_file:
+            answer = input("Name of model: ").replace(" ", "")
+            file_name = answer + ".keras"
+            folder_path = os.path.join(os.getcwd(), answer)
+            file_path = os.path.join(folder_path, file_name)
+            if os.path.exists(folder_path):
+                print("Model name already exists. Try again.")
+            else:
+                good_file = True
+                os.makedirs(folder_path)
+        temporal_model.save(file_path)
+        info_path = os.path.join(folder_path, "info.txt")
+        with open(info_path, 'w') as f:
+            pass
+
+
+    def Exit(self):
+        pass
+
 
 class RLHF(fsm.State):
     def __init__(self, FSM, NORMAL_DATA, ANOMALY_DATA):

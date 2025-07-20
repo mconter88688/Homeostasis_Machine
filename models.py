@@ -41,3 +41,13 @@ def build_one_way_7_18():
     ])
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
+
+
+class ModelConfigParam:
+    def __init__(self, epochs, batch_size, validation_split = 0, feedback_file = None):
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.validation_split = validation_split
+        self.feedback_file = feedback_file
+
+    
