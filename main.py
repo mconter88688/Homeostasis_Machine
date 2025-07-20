@@ -34,7 +34,7 @@ else:
 print("Feedback file loaded")
 
 # Class instance for model parameters
-model_params = mod.ModelConfigParam
+model_params = mod.ModelConfigParam(5, 4)
 
 # Ensure the model folder is in the directory
 model_folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER)
