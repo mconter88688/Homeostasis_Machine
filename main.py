@@ -264,7 +264,7 @@ class LoadModel(fsm.State):
             answer = input("Select model to load: ")
             if answer in os.listdir(cons.MODEL_FOLDER):
                 good_model = True
-                self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer + ".keras"))
+                self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".keras"))
                 self.model_params.epochs = 0
                 self.model_params.batch_size = 0
                 self.model_params.validation_split = 0
