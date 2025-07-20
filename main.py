@@ -156,6 +156,7 @@ class Menu(fsm.State):
         print("Take in Normal Training Data:......................N")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
+        print("Load in a Saved Model..............................L")
 
             
     def Execute(self):
@@ -170,6 +171,8 @@ class Menu(fsm.State):
             self.FSM.Transition("toRLHF")
         elif answer == "M":
             self.FSM.Transition("toDocumentModel")
+        elif answer == "L":
+            self.FSM.Transition("toLoadModel")
         else:
             print("Invalid input. Try again.")
 
@@ -241,17 +244,30 @@ class SavingModelAndFeedback(fsm.State):
 
 
 class LoadModel(fsm.State):
-    def __init__(self, FSM, model_params):
+    def __init__(self, FSM, model_params, temporal_model):
         self.FSM = FSM
         self.model_params = model_params
+        self.temporal_model = temporal_model
 
     def Enter(self):
-        # show all model names
-        pass
+        print("Available model folders:")
+        for folder in os.listdir(cons.MODEL_FOLDER):
+            print("-", folder)
 
     def Execute(self):
-        input()
-        temporal_model
+        if not os.listdir(cons.MODEL_FOLDER):
+            print("MODEL_FOLDER is empty.")
+            self.FSM.Transition("toMenu")
+            return
+        good_model = False
+        while not good_model:
+            answer = input("Select model to load: ")
+            if answer in os.listdir(cons.MODEL_FOLDER):
+                good_model = True
+                self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer + ".keras"))
+            else:
+                print("Model does not exist. Try again")
+        self.FSM.Transition("toMenu")
 
     def Exit(self):
         pass
@@ -271,7 +287,7 @@ class DocumentModel(fsm.State):
         while not good_file:
             answer = input("Name of model: ").replace(" ", "")
             file_name = answer + ".keras"
-            folder_path = os.path.join(os.getcwd(), "Models" ,answer)
+            folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer)
             file_path = os.path.join(folder_path, file_name)
             if os.path.exists(folder_path):
                 print("Model name already exists. Try again.")
@@ -349,12 +365,14 @@ hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(cons.FEED
 hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
 hs_model.FSM.states["DocumentModel"] = DocumentModel(hs_model.FSM, model_params)
+hs_model.FSM.states["LoadModel"] = LoadModel(hs_model, model_params, temporal_model)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
 hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition("SavingModelAndFeedback")
 hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingModelAndFeedback")
 hs_model.FSM.transitions["toDocumentModel"] = fsm.Transition("DocumentModel")
+hs_model.FSM.transitions["toLoadModel"] = fsm.Transition("LoadModel")
 
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")
