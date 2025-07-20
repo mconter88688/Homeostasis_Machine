@@ -201,7 +201,7 @@ class SavingModelAndFeedback(fsm.State):
         epoch_num = input("Epochs: ")
         batch_num = input("Batch Size: ")
         validation_num = input("Validation Split: ")
-        self.redefine_all(epoch_num, batch_num, validation_num, None, None)
+        self.model_params.redefine_all(epoch_num, batch_num, validation_num, None, None)
         answer = input("Would you like to load a saved feedback file?").strip().upper()
         ## TODO: Complete this load feedback file thing
         if answer == "Y":
