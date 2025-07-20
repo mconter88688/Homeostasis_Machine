@@ -155,6 +155,7 @@ class Menu(fsm.State):
         print("Save Feedback and Retrain Model:...................S")
         print("Take in Normal Training Data:......................N")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
+        print("Document Your Currently Loaded Model...............M")
 
             
     def Execute(self):
@@ -167,6 +168,8 @@ class Menu(fsm.State):
             self.FSM.Transition("toNormalDataTraining")
         elif answer == "F":
             self.FSM.Transition("toRLHF")
+        elif answer == "M":
+            self.FSM.Transition("toDocumentModel")
         else:
             print("Invalid input. Try again.")
 
@@ -175,12 +178,13 @@ class Menu(fsm.State):
 
 
 class SavingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, NORMAL_DATA, ANOMALY_DATA):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, NORMAL_DATA, ANOMALY_DATA, model_params):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
         self.NORMAL_DATA = NORMAL_DATA
         self.ANOMALY_DATA = ANOMALY_DATA
+        self.model_params = model_params
     
     def Enter(self):
         print("Saving Model and Feedback File")
@@ -237,8 +241,9 @@ class SavingModelAndFeedback(fsm.State):
 
 
 class DocumentModel(fsm.State):
-    def __init__(self, FSM):
+    def __init__(self, FSM, model_params):
         self.FSM = FSM
+        self.model_params = model_params
 
     def Enter(self):
         pass
@@ -258,11 +263,16 @@ class DocumentModel(fsm.State):
         temporal_model.save(file_path)
         info_path = os.path.join(folder_path, "info.txt")
         with open(info_path, 'w') as f:
-            pass
+            f.write(f"Model Training Info\n===================\n")
+            f.write(f"Epochs:            {self.model_params.epochs}\n")
+            f.write(f"Batch Size:        {self.model_params.batch_size}\n")
+            f.write(f"Validation Split:  {self.model_params.validation_split}\n")
+            f.write(f"Feedback File:     {model_params.feedback_file}\n")
+        self.FSM.Transition("toMenu")
 
 
     def Exit(self):
-        pass
+        print("Model Saved!")
 
 
 class RLHF(fsm.State):
@@ -317,14 +327,16 @@ print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
 hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM, NORMAL_DATA)
 hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
-hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
+hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA, model_params)
 hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
+hs_model.FSM.states["DocumentModel"] = DocumentModel(hs_model.FSM, model_params)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
 hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition("SavingModelAndFeedback")
 hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingModelAndFeedback")
+hs_model.FSM.transitions["toDocumentModel"] = fsm.Transition("DocumentModel")
 
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")

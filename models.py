@@ -44,10 +44,11 @@ def build_one_way_7_18():
 
 
 class ModelConfigParam:
-    def __init__(self, epochs, batch_size, validation_split = 0, feedback_file = None):
+    def __init__(self, epochs, batch_size, validation_split = 0, feedback_file = None, model_file = None):
         self.epochs = epochs
         self.batch_size = batch_size
         self.validation_split = validation_split
         self.feedback_file = feedback_file
+        self.model_file = model_file
 
     
