@@ -253,7 +253,7 @@ class DocumentModel(fsm.State):
         while not good_file:
             answer = input("Name of model: ").replace(" ", "")
             file_name = answer + ".keras"
-            folder_path = os.path.join(os.getcwd(), answer)
+            folder_path = os.path.join(os.getcwd(), "Models" ,answer)
             file_path = os.path.join(folder_path, file_name)
             if os.path.exists(folder_path):
                 print("Model name already exists. Try again.")
