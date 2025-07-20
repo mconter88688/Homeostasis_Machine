@@ -198,7 +198,15 @@ class SavingModelAndFeedback(fsm.State):
                         EarlyStopping(patience=3, restore_best_weights=True),
                         ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                     ]
-        
+        epoch_num = input("Epochs: ")
+        batch_num = input("Batch Size: ")
+        validation_num = input("Validation Split: ")
+        self.redefine_all(epoch_num, batch_num, validation_num, None, None)
+        answer = input("Would you like to load a saved feedback file?").strip().upper()
+        ## TODO: Complete this load feedback file thing
+        if answer == "Y":
+            pass
+
         
         if self.NORMAL_DATA or self.ANOMALY_DATA:
             print("Retraining model with feedback data...")
@@ -277,7 +285,15 @@ class LoadModel(fsm.State):
     def Exit(self):
         pass
 
+## TODO: Finish document feedback
+class DocumentFeedback(fsm.State):
+    def __init__(self, FSM, model_params):
+        self.FSM = FSM
+        self.model_params = model_params
     
+    def Enter(self):
+        pass
+
 
 class DocumentModel(fsm.State):
     def __init__(self, FSM, model_params):
