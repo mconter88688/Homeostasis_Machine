@@ -11,6 +11,8 @@ import pickle
 import constants as cons
 import models as mod
 #from sklearn.model_selection import train_test_split
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # CONFIGURATION
