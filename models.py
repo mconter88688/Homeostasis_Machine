@@ -50,6 +50,7 @@ class ModelConfigParam:
         self.validation_split = validation_split
         self.feedback_file = feedback_file
         self.model_file = model_file
+        self.temp_graph = None
 
     def redefine_all(self, epochs = 0, batch_size = 0, validation_split = 0, feedback_file = None, model_file = None):
         self.epochs = epochs

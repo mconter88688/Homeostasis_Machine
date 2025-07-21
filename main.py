@@ -53,7 +53,7 @@ class Data:
             pickle.dump((self.normal_data, self.anomaly_data), f)
 
     def is_empty(self):
-        return (self.normal_data or self.anomaly_data)
+        return (len(self.normal_data) == 0 and len(self.anomaly_data) == 0)
     
 
 ### SETUP ###
@@ -253,7 +253,8 @@ class SavingModelAndFeedback(fsm.State):
                     else:
                         print("Data file does not exist. Try again")
             
-
+        # Save feedback into file
+        self.model_data.save_data(cons.FEEDBACK_FILE)
         
         if not self.model_data.is_empty():
             print("Retraining model with feedback data...")
@@ -287,8 +288,16 @@ class SavingModelAndFeedback(fsm.State):
 
                 plt.tight_layout()
                 plt.show()
-        # Save feedback into file
-        self.model_data.save_data(cons.FEEDBACK_FILE)
+        
+                answer = input("Would you like to save this model? (Y/N)").strip().upper()
+                if answer == "Y":
+                    graph_path = os.path.join(os.getcwd(), "temp_training_plot.png")
+                    plt.savefig(graph_path)
+                    
+                    self.model_params.temp_graph = graph_path
+                    
+                    self.FSM.Transition("toDocumentModel")
+                    return
 
         self.FSM.Transition("toMenu")
         return
@@ -342,6 +351,23 @@ class DocumentFeedback(fsm.State):
         pass
 
     def Execute(self):
+        good_file = False
+        while not good_file:
+            answer = input("Name of data file: ").replace(" ", "")
+            file_name = answer + ".pkl"
+            folder_path = os.path.join(os.getcwd(), cons.DATA_FOLDER, answer)
+            file_path = os.path.join(folder_path, file_name)
+            if os.path.exists(folder_path):
+                print("Data file name already exists. Try again.")
+            else:
+                good_file = True
+                os.makedirs(folder_path)
+        self.model_data.save_data(cons.FEEDBACK_FILE)
+        self.model_data.save_data(file_path)
+        info_path = os.path.join(folder_path, "info.txt")
+        self.model_params.feedback_file = file_path
+        with open(info_path, 'w') as f:
+            pass
         self.FSM.Transition("toMenu")
         pass
 
@@ -350,9 +376,10 @@ class DocumentFeedback(fsm.State):
 
 
 class DocumentModel(fsm.State):
-    def __init__(self, FSM, model_params):
+    def __init__(self, FSM, model_params, temporal_model):
         self.FSM = FSM
         self.model_params = model_params
+        self.temporal_model = temporal_model
 
     def Enter(self):
         pass
@@ -369,7 +396,12 @@ class DocumentModel(fsm.State):
             else:
                 good_file = True
                 os.makedirs(folder_path)
-        temporal_model.save(file_path)
+        self.temporal_model.save(file_path)
+        if (self.model_params.temp_graph != None) and os.path.exists(self.model_params.temp_graph):
+            graph_target = os.path.join(folder_path, "training_plot.png")
+            os.rename(self.model_params.temp_graph, graph_target)
+            os.remove(self.model_params.temp_graph)
+            self.model_params.temp_graph = None
         info_path = os.path.join(folder_path, "info.txt")
         with open(info_path, 'w') as f:
             f.write(f"Model Training Info\n===================\n")
@@ -423,7 +455,7 @@ class RLHF(fsm.State):
             self.model_data.append_normal_data(np.stack(buffer))
             print("Labeled one normal sequence")
         elif key == ord('a') and len(buffer) == cons.SEQ_LEN:
-            self.model_data.append_anomaly_data.append(np.stack(buffer))
+            self.model_data.append_anomaly_data(np.stack(buffer))
             print("Labeled one anomalous sequence")
 
     def Exit(self):
@@ -440,7 +472,7 @@ hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(cons.FEED
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
 hs_model.FSM.states["DocumentModel"] = DocumentModel(hs_model.FSM, model_params)
 hs_model.FSM.states["LoadModel"] = LoadModel(hs_model.FSM, model_params, temporal_model)
-hs_model.FSM.states["DocumentFeedback"] = DocumentFeedback(hs_model.FSM, model_params, model_data)
+hs_model.FSM.states["DocumentFeedback"] = DocumentFeedback(hs_model.FSM, model_params, model_data, temporal_model)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
