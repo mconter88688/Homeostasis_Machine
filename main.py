@@ -289,12 +289,18 @@ class SavingModelAndFeedback(fsm.State):
                 plt.legend()
 
                 plt.tight_layout()
-                plt.show()
-        
+
+                graph_path = os.path.join(os.getcwd(), "temp_training_plot.png")
+                plt.savefig(graph_path)
+
+                img = cv2.imread(graph_path)
+                if img is not None:
+                    cv2.imshow("Training Plot", img)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+
                 answer = input("Would you like to save this model? (Y/N)").strip().upper()
                 if answer == "Y":
-                    graph_path = os.path.join(os.getcwd(), "temp_training_plot.png")
-                    plt.savefig(graph_path)
                     
                     self.model_params.temp_graph = graph_path
                     
