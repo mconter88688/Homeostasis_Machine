@@ -366,8 +366,9 @@ class DocumentFeedback(fsm.State):
         self.model_data.save_data(file_path)
         info_path = os.path.join(folder_path, "info.txt")
         self.model_params.feedback_file = file_path
+        notes = input("Notes: ")
         with open(info_path, 'w') as f:
-            pass
+            f.write(notes)
         self.FSM.Transition("toMenu")
         pass
 
@@ -403,12 +404,15 @@ class DocumentModel(fsm.State):
             os.remove(self.model_params.temp_graph)
             self.model_params.temp_graph = None
         info_path = os.path.join(folder_path, "info.txt")
+        notes = input("Notes: ")
         with open(info_path, 'w') as f:
             f.write(f"Model Training Info\n===================\n")
             f.write(f"Epochs:            {self.model_params.epochs}\n")
             f.write(f"Batch Size:        {self.model_params.batch_size}\n")
             f.write(f"Validation Split:  {self.model_params.validation_split}\n")
-            f.write(f"Feedback File:     {model_params.feedback_file}\n")
+            #f.write(f"Feedback File:     {model_params.feedback_file}\n")
+            f.write("\n")
+            f.write(notes)
         self.FSM.Transition("toMenu")
 
 
