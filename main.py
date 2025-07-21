@@ -401,7 +401,6 @@ class DocumentModel(fsm.State):
         if (self.model_params.temp_graph != None) and os.path.exists(self.model_params.temp_graph):
             graph_target = os.path.join(folder_path, "training_plot.png")
             os.rename(self.model_params.temp_graph, graph_target)
-            os.remove(self.model_params.temp_graph)
             self.model_params.temp_graph = None
         info_path = os.path.join(folder_path, "info.txt")
         notes = input("Notes: ")
