@@ -21,16 +21,46 @@ print("Configuration done!")
 
 buffer = deque(maxlen=cons.SEQ_LEN)
 
+class Data:
+    def __init__(self):
+        self.normal_data = []
+        self.anomaly_data = []
+    
+    def load_data(self, feedback_file):
+        if os.path.exists(feedback_file):
+            try:
+                with open(feedback_file, "rb") as f:
+                    self.normal_data, self.anomaly_data = pickle.load(f)
+            except EOFError:
+                self.normal_data, self.anomaly_data = [], []
+                print("File is empty")
+        else:
+            self.normal_data, self.anomaly_data = [], []
+            print("file does not exist")
+
+    def clear_data(self):
+        self.anomaly_data.clear()
+        self.normal_data.clear()
+
+    def append_normal_data(self, new_data):
+        self.normal_data.append(new_data)
+    
+    def append_anomaly_data(self, new_data):
+        self.anomaly_data.append(new_data)
+
+    def save_data(self, feedback_file):
+        with open(feedback_file, "wb") as f:
+            pickle.dump((self.normal_data, self.anomaly_data), f)
+
+    def is_empty(self):
+        return (self.normal_data or self.anomaly_data)
+    
+
 ### SETUP ###
 # Load previous feedback data if it exists
-if os.path.exists(cons.FEEDBACK_FILE):
-    try:
-        with open(cons.FEEDBACK_FILE, "rb") as f:
-            NORMAL_DATA, ANOMALY_DATA = pickle.load(f)
-    except EOFError:
-        NORMAL_DATA, ANOMALY_DATA = [], []
-else:
-    NORMAL_DATA, ANOMALY_DATA = [], []
+
+model_data = Data()
+model_data.load_data(cons.FEEDBACK_FILE)
 print("Feedback file loaded")
 
 # Class instance for model parameters
@@ -81,10 +111,10 @@ print("Camera Found!")
 
 
 class NormalDataTraining(fsm.State):
-    def __init__(self, FSM, NORMAL_DATA):
+    def __init__(self, FSM, model_data):
         self.FSM = FSM
         self.num_frames = 0
-        self.NORMAL_DATA = NORMAL_DATA
+        self.model_data = model_data
 
     def Enter(self):
         print("Normal Feedback Data Mode")
@@ -101,7 +131,7 @@ class NormalDataTraining(fsm.State):
         feat = extract_feature(frame)
         buffer.append(feat)
         if len(buffer) == cons.SEQ_LEN:
-            self.NORMAL_DATA.append(np.stack(buffer))
+            self.model_data.append_normal_data(np.stack(buffer))
         
         cv2.putText(frame, f"{self.num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
         cv2.imshow("Anomaly Detector", frame)
@@ -117,19 +147,17 @@ class NormalDataTraining(fsm.State):
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, NORMAL_DATA, ANOMALY_DATA):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
-        self.NORMAL_DATA = NORMAL_DATA
-        self.ANOMALY_DATA = ANOMALY_DATA
+        self.model_data = model_data
 
     def Enter(self):
         print("Deleting model and feedback data")
     
     def Execute(self):
-        self.NORMAL_DATA.clear()
-        self.ANOMALY_DATA.clear()
+        self.model_data.clear_data()
         
         with open(cons.FEEDBACK_FILE, "wb") as f:
             pass
@@ -156,6 +184,7 @@ class Menu(fsm.State):
         print("Take in Normal Training Data:......................N")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
+        print("Document Your Currently Loaded Data................D")
         print("Load in a Saved Model..............................L")
 
             
@@ -173,6 +202,8 @@ class Menu(fsm.State):
             self.FSM.Transition("toDocumentModel")
         elif answer == "L":
             self.FSM.Transition("toLoadModel")
+        elif answer == "D":
+            self.FSM.Transition("toDocumentFeedback")
         else:
             print("Invalid input. Try again.")
 
@@ -181,12 +212,11 @@ class Menu(fsm.State):
 
 
 class SavingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, NORMAL_DATA, ANOMALY_DATA, model_params):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
-        self.NORMAL_DATA = NORMAL_DATA
-        self.ANOMALY_DATA = ANOMALY_DATA
+        self.model_data = model_data
         self.model_params = model_params
     
     def Enter(self):
@@ -202,17 +232,34 @@ class SavingModelAndFeedback(fsm.State):
         batch_num = input("Batch Size: ")
         validation_num = input("Validation Split: ")
         self.model_params.redefine_all(epoch_num, batch_num, validation_num, None, None)
-        answer = input("Would you like to load a saved feedback file?").strip().upper()
-        ## TODO: Complete this load feedback file thing
+        answer = input("Would you like to load a saved data file?").strip().upper()
+        ## TODO: Complete this load data file thing
         if answer == "Y":
-            pass
+            print("Available data folders:")
+            for folder in os.listdir(cons.DATA_FOLDER):
+                print("-", folder)
+            if not os.listdir(cons.DATA_FOLDER):
+                print("DATA_FOLDER is empty.")
+            else:
+                good_data = False
+                while not good_data:
+                    answer = input("Select data to load: ")
+                    if answer in os.listdir(cons.DATA_FOLDER):
+                        good_data = True
+                        data_path = os.path.join(os.getcwd(), cons.DATA_FOLDER, answer, answer + ".pkl")
+                        self.model_data.load_data(data_path)
+                    elif answer.upper() == "Q":
+                        break
+                    else:
+                        print("Data file does not exist. Try again")
+            
 
         
-        if self.NORMAL_DATA or self.ANOMALY_DATA:
+        if not self.model_data.is_empty():
             print("Retraining model with feedback data...")
             # Create training sets
-            X = np.array(self.NORMAL_DATA + self.ANOMALY_DATA)
-            y = np.array([0]*len(self.NORMAL_DATA) + [1]*len(self.ANOMALY_DATA)) # trains it with predictions being certain of normal v.s. anomaly scenarios
+            X = np.array(self.model_data.normal_data + self.model_data.anomaly_data)
+            y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             history = temporal_model.fit(X, y, validation_split = self.model_params.validation_split, shuffle=True, epochs=self.model_params.epochs, batch_size=self.model_params.batch_size, callbacks=callbacks)
             temporal_model.save(cons.MODEL_PATH)
             print("Model updated and saved.")
@@ -241,8 +288,7 @@ class SavingModelAndFeedback(fsm.State):
                 plt.tight_layout()
                 plt.show()
         # Save feedback into file
-        with open(cons.FEEDBACK_FILE, "wb") as f:
-            pickle.dump((self.NORMAL_DATA, self.ANOMALY_DATA), f)
+        self.model_data.save_data(cons.FEEDBACK_FILE)
 
         self.FSM.Transition("toMenu")
         return
@@ -287,11 +333,19 @@ class LoadModel(fsm.State):
 
 ## TODO: Finish document feedback
 class DocumentFeedback(fsm.State):
-    def __init__(self, FSM, model_params):
+    def __init__(self, FSM, model_params, model_data):
         self.FSM = FSM
         self.model_params = model_params
+        self.model_data = model_data
     
     def Enter(self):
+        pass
+
+    def Execute(self):
+        self.FSM.Transition("toMenu")
+        pass
+
+    def Exit(self):
         pass
 
 
@@ -331,10 +385,9 @@ class DocumentModel(fsm.State):
 
 
 class RLHF(fsm.State):
-    def __init__(self, FSM, NORMAL_DATA, ANOMALY_DATA):
+    def __init__(self, FSM, model_data):
         self.FSM = FSM
-        self.NORMAL_DATA = NORMAL_DATA
-        self.ANOMALY_DATA = ANOMALY_DATA
+        self.model_data = model_data
 
     def Enter(self):
         print("Human Feedback Mode")
@@ -367,10 +420,10 @@ class RLHF(fsm.State):
             self.FSM.Transition("toMenu")
             return
         elif key == ord('n') and len(buffer) == cons.SEQ_LEN:
-            self.NORMAL_DATA.append(np.stack(buffer))
+            self.model_data.append_normal_data(np.stack(buffer))
             print("Labeled one normal sequence")
         elif key == ord('a') and len(buffer) == cons.SEQ_LEN:
-            self.ANOMALY_DATA.append(np.stack(buffer))
+            self.model_data.append_anomaly_data.append(np.stack(buffer))
             print("Labeled one anomalous sequence")
 
     def Exit(self):
@@ -380,13 +433,14 @@ class RLHF(fsm.State):
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM, NORMAL_DATA)
-hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
-hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA, model_params)
-hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, NORMAL_DATA, ANOMALY_DATA)
+hs_model.FSM.states["NormalDataTraining"] = NormalDataTraining(hs_model.FSM, model_data)
+hs_model.FSM.states["RLHF"] = RLHF(hs_model.FSM, model_data)
+hs_model.FSM.states["SavingModelAndFeedback"] = SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data, model_params)
+hs_model.FSM.states["WipingModelAndFeedback"] = WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data)
 hs_model.FSM.states["Menu"] = Menu(hs_model.FSM)
 hs_model.FSM.states["DocumentModel"] = DocumentModel(hs_model.FSM, model_params)
 hs_model.FSM.states["LoadModel"] = LoadModel(hs_model.FSM, model_params, temporal_model)
+hs_model.FSM.states["DocumentFeedback"] = DocumentFeedback(hs_model.FSM, model_params, model_data)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
@@ -394,6 +448,7 @@ hs_model.FSM.transitions["toSavingModelAndFeedback"] = fsm.Transition("SavingMod
 hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingModelAndFeedback")
 hs_model.FSM.transitions["toDocumentModel"] = fsm.Transition("DocumentModel")
 hs_model.FSM.transitions["toLoadModel"] = fsm.Transition("LoadModel")
+hs_model.FSM.transitions["toDocumentFeedback"] = fsm.Transition("DocumentFeedback")
 
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")
