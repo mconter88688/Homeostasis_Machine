@@ -180,7 +180,7 @@ class Menu(fsm.State):
     def Enter(self):
         print("**Select from the following:**")
         print("Wipe Model and Feedback:...........................W")
-        print("Save Feedback and Retrain Model:...................S")
+        print("Retrain Model:.....................................R")
         print("Take in Normal Training Data:......................N")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
@@ -192,7 +192,7 @@ class Menu(fsm.State):
         answer = input("").strip().upper()
         if answer == "W":
             self.FSM.Transition("toWipingModelAndFeedback")
-        elif answer == "S":
+        elif answer == "R":
             self.FSM.Transition("toSavingModelAndFeedback")
         elif answer == "N":
             self.FSM.Transition("toNormalDataTraining")
@@ -327,11 +327,11 @@ class LoadModel(fsm.State):
             answer = input("Select model to load: ")
             if answer in os.listdir(cons.MODEL_FOLDER):
                 good_model = True
-                self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".keras"))
+                self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".h5"))
                 self.model_params.epochs = 0
                 self.model_params.batch_size = 0
                 self.model_params.validation_split = 0
-                self.model_params.model_file = answer + ".keras"
+                self.model_params.model_file = answer + ".h5"
                 self.model_params.feedback_file = None
             else:
                 print("Model does not exist. Try again")
@@ -389,7 +389,7 @@ class DocumentModel(fsm.State):
         good_file = False
         while not good_file:
             answer = input("Name of model: ").replace(" ", "")
-            file_name = answer + ".keras"
+            file_name = answer + ".h5"
             folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer)
             file_path = os.path.join(folder_path, file_name)
             if os.path.exists(folder_path):
