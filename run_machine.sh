@@ -11,6 +11,8 @@ else
     source ~/"$ENV_NAME"/bin/activate
 fi
 
+export QT_QPA_PLATFORM=eglfs
+
 echo "Running Python script..."
 python3 "$PYTHON_SCRIPT"
 
