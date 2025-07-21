@@ -228,9 +228,9 @@ class SavingModelAndFeedback(fsm.State):
                         EarlyStopping(patience=3, restore_best_weights=True),
                         ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                     ]
-        epoch_num = input("Epochs: ")
-        batch_num = input("Batch Size: ")
-        validation_num = input("Validation Split: ")
+        epoch_num = int(input("Epochs: "))
+        batch_num = int(input("Batch Size: "))
+        validation_num = float(input("Validation Split: "))
         self.model_params.redefine_all(epoch_num, batch_num, validation_num, None, None)
         answer = input("Would you like to load a saved data file?").strip().upper()
         ## TODO: Complete this load data file thing
