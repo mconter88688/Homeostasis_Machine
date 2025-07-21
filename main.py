@@ -332,7 +332,11 @@ class LoadModel(fsm.State):
             return
         good_model = False
         while not good_model:
-            answer = input("Select model to load: ")
+            answer = input("Select model to load: ").replace(" ", "")
+            if answer.upper() == "Q":
+                print("Quitting...")
+                self.FSM.Transition("toMenu")
+                return
             if answer in os.listdir(cons.MODEL_FOLDER):
                 good_model = True
                 self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".h5"))
@@ -362,6 +366,10 @@ class DocumentFeedback(fsm.State):
         good_file = False
         while not good_file:
             answer = input("Name of data file: ").replace(" ", "")
+            if answer.upper() == "Q":
+                print("Quitting...")
+                self.FSM.Transition("toMenu")
+                return
             file_name = answer + ".pkl"
             folder_path = os.path.join(os.getcwd(), cons.DATA_FOLDER, answer)
             file_path = os.path.join(folder_path, file_name)
@@ -397,6 +405,10 @@ class DocumentModel(fsm.State):
         good_file = False
         while not good_file:
             answer = input("Name of model: ").replace(" ", "")
+            if answer.upper() == "Q":
+                print("Quitting...")
+                self.FSM.Transition("toMenu")
+                return
             file_name = answer + ".h5"
             folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer)
             file_path = os.path.join(folder_path, file_name)
