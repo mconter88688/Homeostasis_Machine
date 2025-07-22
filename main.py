@@ -14,6 +14,7 @@ import models as mod
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import camera as cam
 
 # CONFIGURATION
 print("Starting configuration!")
@@ -102,14 +103,16 @@ def extract_feature(frame):
     feats = feature_extractor(tensor) # use feature extractor on adjusted frame
     return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
 
-for cam in range(5):
-    cap = cv2.VideoCapture(cam)
+for camera in range(5):
+    cap = cv2.VideoCapture(camera)
     if cap.isOpened():
-        CAM_INDEX = cam
+        CAM_INDEX = camera
         break
 else:
     raise RuntimeError("No USB camera found.")  
 print("Camera Found!")
+# cv2.namedWindow(cons.WINDOW_NAME, cv2.WINDOW_NORMAL)
+# cv2.resizeWindow(cons.WINDOW_NAME, 1280, 960)  # Adjusted for 2x2 layout
 
 
 class NormalDataTraining(fsm.State):
