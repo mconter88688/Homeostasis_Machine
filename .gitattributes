@@ -1,0 +1,24 @@
+# Always use LF for shell scripts
+*.sh text eol=lf
+
+# Force LF for other common code files
+*.py text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+
+# Treat binary files properly
+*.jpg binary
+*.png binary
+*.gif binary
+*.h5  binary
+*.tflite binary
+*.zip binary
+*.mp4 binary
+*.avi binary
