@@ -8,6 +8,8 @@ from utils import frame_to_bgr_image
 
 
 MAX_QUEUE_SIZE = 1
+MIN_DEPTH = 20  # 20mm
+MAX_DEPTH = 10000  # 10000mm
 
 class Camera:
     def __init__(self):
@@ -26,10 +28,9 @@ class Camera:
         # cached frames for better visualization
         self.cached_frames = {
             'color': None,
-            'depth': None,
+            'hdr': None,
             'left_ir': None,
             'right_ir': None,
-            'ir': None
         }
         self.stop_rendering = False
 
@@ -73,38 +74,61 @@ class Camera:
             print(e)
             return
         
-    def rendering_frames(self):
-        """Main rendering loop for processing and displaying frames"""
+    def one_capture(self):
+        return_vals = [True, None]
+        if self.frames_queue.empty():
+            return_vals[0] = False
+            return
+
+        frame_set = self.frames_queue.get()
+        if frame_set is None:
+            return_vals[0] = False
+            return
+
+        depth_frame = self.safe_get_depth(frame_set)
+        left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME)
+        right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME)
+
+        if not all([depth_frame, left_ir_frame, right_ir_frame]):
+                print("Not All frames received")
+                return_vals[0] = False
+                return
+        
+        # Process with HDR merge
+        merged_frame = self.hdr_filter.process(frame_set)
+        if not merged_frame:
+            return_vals[0] = False
+            return
+        
+        
+        merged_frames = merged_frame.as_frame_set()
+        merged_depth_frame = merged_frames.get_depth_frame()
+
+        # Convert frames to displayable images
+        merged_depth_image = self.create_depth_image(merged_depth_frame)
+        ir_left_image = self.create_ir_image(left_ir_frame)
+        ir_right_image = self.create_ir_image(right_ir_frame)
+
+        # Enhance contrast for all images
+        ir_left_image = self.enhance_contrast(ir_left_image, clip_limit=4.0)
+        ir_right_image = self.enhance_contrast(ir_right_image, clip_limit=4.0)
+        merged_depth_image = self.enhance_contrast(merged_depth_image, clip_limit=4.0)
+
+        
         
 
-        # Create and configure display window
-        cv2.namedWindow("Orbbec Camera Viewer", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("Orbbec Camera Viewer", 1280, 720)
+        # Process all available frames
+        processed_frames = {
+            'color': self.process_color(frame_set),
+            'hdr': merged_depth_image,
+            'left_ir': ir_left_image,
+            'right_ir': ir_right_image
+        }
 
-        while not self.stop_rendering:
-            if self.frames_queue.empty():
-                continue
+        # Create and display the combined view
+        display = self.create_display(processed_frames)
+        cv2.imshow("Orbbec Camera Viewer", display)
 
-            frame_set = self.frames_queue.get()
-            if frame_set is None:
-                continue
-
-            # Process all available frames
-            processed_frames = {
-                'color': self.process_color(frame_set),
-                'depth': self.process_depth(frame_set),
-                'left_ir': self.process_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME),
-                'right_ir': self.process_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME)
-            }
-
-            # Create and display the combined view
-            display = self.create_display(processed_frames)
-            cv2.imshow("Orbbec Camera Viewer", display)
-
-            # Check for exit key
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                return
     
     def process_color(self, frame):
         """Process color frame to BGR image"""
@@ -121,7 +145,36 @@ class Camera:
             print("Error processing color frame")
             return None
 
-    def process_depth(self, frame):
+    def create_depth_image(depth_frame):
+        """Convert depth frame to colorized image"""
+        width = depth_frame.get_width()
+        height = depth_frame.get_height()
+        scale = depth_frame.get_depth_scale()
+
+        depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
+        depth_data = depth_data.reshape((height, width))
+        depth_data = depth_data.astype(np.float32) * scale
+        depth_data = np.where((depth_data > MIN_DEPTH) & (depth_data < MAX_DEPTH), depth_data, 0)
+        depth_data = depth_data.astype(np.uint16)
+
+        depth_image = cv2.normalize(depth_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        return cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
+
+
+    def create_ir_image(ir_frame):
+        """Convert IR frame to displayable image with enhanced contrast"""
+        ir_frame = ir_frame.as_video_frame()
+        width = ir_frame.get_width()
+        height = ir_frame.get_height()
+
+        ir_data = np.frombuffer(ir_frame.get_data(), dtype=np.uint8)
+        ir_data = ir_data.reshape((height, width))
+
+        ir_image = cv2.normalize(ir_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        return cv2.cvtColor(ir_image, cv2.COLOR_GRAY2BGR)
+        
+        
+    def safe_get_depth(self, frame):
         """Process depth frame to colorized depth image"""
         if not frame:
             return None
@@ -130,17 +183,14 @@ class Camera:
         if not depth_frame:
             return None
         try:
-            depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
-            depth_data = depth_data.reshape(depth_frame.get_height(), depth_frame.get_width())
-            depth_image = cv2.normalize(depth_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
             self.cached_frames['depth'] = depth_frame
-            return cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
         except ValueError:
             print("Error processing depth frame")
             return None
+        return depth_frame
 
 
-    def process_ir(self, frame, frame_type):
+    def safe_get_ir(self, frame, frame_type):
         if frame is None:
             return None
         ir_frame = frame.get_frame(frame_type)
@@ -148,41 +198,8 @@ class Camera:
         ir_frame = ir_frame if ir_frame else self.cached_frames[frame_name]
         if not ir_frame:
             return None
-        ir_frame = ir_frame.as_video_frame()
-        self.cached_frames[frame_name] = ir_frame
-        ir_data = np.asanyarray(ir_frame.get_data())
-        width = ir_frame.get_width()
-        height = ir_frame.get_height()
-        ir_format = ir_frame.get_format()
+        return ir_frame
 
-        if ir_format == ob.OBFormat.Y8:
-            ir_data = np.resize(ir_data, (height, width, 1))
-            data_type = np.uint8
-            image_dtype = cv2.CV_8UC1
-            max_data = 255
-        elif ir_format == ob.OBFormat.MJPG:
-            ir_data = cv2.imdecode(ir_data, cv2.IMREAD_UNCHANGED)
-            data_type = np.uint8
-            image_dtype = cv2.CV_8UC1
-            max_data = 255
-            if ir_data is None:
-                print("decode mjpeg failed")
-                return None
-            ir_data = np.resize(ir_data, (height, width, 1))
-        else:
-            ir_data = np.frombuffer(ir_data, dtype=np.uint16)
-            data_type = np.uint16
-            image_dtype = cv2.CV_16UC1
-            max_data = 255
-            ir_data = np.resize(ir_data, (height, width, 1))
-
-        cv2.normalize(ir_data, ir_data, 0, max_data, cv2.NORM_MINMAX, dtype=image_dtype)
-        ir_data = ir_data.astype(data_type)
-        return cv2.cvtColor(ir_data, cv2.COLOR_GRAY2RGB)
-
-
-    def capture(self):
-         pass
         
     def on_new_frame_callback(self, frame: ob.FrameSet):
         """Callback function to handle new frames"""
@@ -271,3 +288,10 @@ class Camera:
     def stop(self):
         self.Pipeline.stop()
         cv2.destroyAllWindows()
+
+camera = Camera()
+camera.configure_streams()
+camera.configure_HDR()
+camera.start()
+while True:
+    camera.one_capture()
