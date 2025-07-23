@@ -32,7 +32,8 @@ class Camera:
             'left_ir': None,
             'right_ir': None,
         }
-        self.stop_rendering = False
+        self.state = None
+        self.number= 0
 
     def configure_streams(self):
         # enable all wanted streams
@@ -78,31 +79,52 @@ class Camera:
         return_vals = [True, None]
         if self.frames_queue.empty():
             return_vals[0] = False
-            return
+            return return_vals
 
         frame_set = self.frames_queue.get()
         if frame_set is None:
             return_vals[0] = False
-            return
+            return return_vals
 
         depth_frame = self.safe_get_depth(frame_set)
         left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME)
         right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME)
 
+        
+        ir_left = np.frombuffer(left_ir_frame.get_data(), dtype=np.uint8).reshape(
+            (left_ir_frame.get_height(), left_ir_frame.get_width())
+        )
+        ir_right = np.frombuffer(right_ir_frame.get_data(), dtype=np.uint8).reshape(
+            (right_ir_frame.get_height(), right_ir_frame.get_width())
+        )
+        color_image = self.process_color(frame_set)
+        
+        
         if not all([depth_frame, left_ir_frame, right_ir_frame]):
                 print("Not All frames received")
                 return_vals[0] = False
-                return
+                return return_vals
         
         # Process with HDR merge
         merged_frame = self.hdr_filter.process(frame_set)
         if not merged_frame:
             return_vals[0] = False
-            return
+            return return_vals
         
         
         merged_frames = merged_frame.as_frame_set()
         merged_depth_frame = merged_frames.get_depth_frame()
+
+        if merged_depth_frame.get_format() == ob.OBFormat.Y16:
+            width = merged_depth_frame.get_width()
+            height = merged_depth_frame.get_height()
+            scale = merged_depth_frame.get_depth_scale()
+
+            merged_depth_data = np.frombuffer(merged_depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
+            merged_depth_in_mm = merged_depth_data.astype(np.float32) * scale  # depth in mm
+        else:
+            raise RuntimeError("merge data not received")
+
 
         # Convert frames to displayable images
         merged_depth_image = self.create_depth_image(merged_depth_frame)
@@ -119,7 +141,7 @@ class Camera:
 
         # Process all available frames
         processed_frames = {
-            'color': self.process_color(frame_set),
+            'color': color_image,
             'hdr': merged_depth_image,
             'left_ir': ir_left_image,
             'right_ir': ir_right_image
@@ -128,6 +150,7 @@ class Camera:
         # Create and display the combined view
         display = self.create_display(processed_frames)
         cv2.imshow("Orbbec Camera Viewer", display)
+        return [True, [color_image, merged_depth_in_mm, ir_left, ir_right]]
 
     
     def process_color(self, frame):
@@ -264,7 +287,10 @@ class Camera:
         add_label("HDR", w, 0)
         add_label("Left IR", 0, h)
         add_label("Right IR", w, h)
-
+        if self.state == "NormalDataTraining":
+            add_label(str(self.number), 2*w-30, 2*h-60)
+        else:
+            add_label
         return display
     
     def enhance_contrast(self, image, clip_limit=3.0, tile_grid_size=(8, 8)):

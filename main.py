@@ -59,19 +59,6 @@ class Data:
         return (len(self.normal_data) == 0 and len(self.anomaly_data) == 0)
     
 
-### Testing New Code ####
-# cv2.namedWindow(cons.WINDOW_NAME, cv2.WINDOW_NORMAL)
-# cv2.resizeWindow(cons.WINDOW_NAME, 1280, 960)  # Adjusted for 2x2 layout
-camera = cam.Camera()
-camera.configure_streams()
-camera.configure_HDR()
-camera.start()
-while True:
-    camera.one_capture()
-    if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
-        break
-
-
 ### SETUP ###
 # Load previous feedback data if it exists
 
@@ -116,14 +103,10 @@ def extract_feature(frame):
     feats = feature_extractor(tensor) # use feature extractor on adjusted frame
     return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
 
-for camera in range(5):
-    cap = cv2.VideoCapture(camera)
-    if cap.isOpened():
-        CAM_INDEX = camera
-        break
-else:
-    raise RuntimeError("No USB camera found.")  
-print("Camera Found!")
+camera = cam.Camera()
+camera.configure_streams()
+camera.configure_HDR()
+camera.start()
 # cv2.namedWindow(cons.WINDOW_NAME, cv2.WINDOW_NORMAL)
 # cv2.resizeWindow(cons.WINDOW_NAME, 1280, 960)  # Adjusted for 2x2 layout
 
@@ -136,28 +119,27 @@ class NormalDataTraining(fsm.State):
 
     def Enter(self):
         print("Normal Feedback Data Mode")
-        self.num_frames = 0
+        camera.number = 0
+        camera.mode = "NormalDataTraining"
 
     
     def Execute(self):
         # Train on only normal feedback
-        ret, frame = cap.read()
+        ret, frame = camera.one_capture()
         if not ret:
             print("Unsuccessful frame capture. Going to Menu...")
             self.FSM.Transition("toMenu")
             return
-        feat = extract_feature(frame)
+        feat = extract_feature(frame[0])
         buffer.append(feat)
         if len(buffer) == cons.SEQ_LEN:
             self.model_data.append_normal_data(np.stack(buffer))
         
-        cv2.putText(frame, f"{self.num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
-        cv2.imshow("Anomaly Detector", frame)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
             self.FSM.Transition("toMenu")
-        self.num_frames+=1
+        camera.number+=1
 
 
     def Exit(self):
