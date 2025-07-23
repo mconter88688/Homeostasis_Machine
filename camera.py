@@ -110,9 +110,9 @@ class Camera:
         ir_right_image = self.create_ir_image(right_ir_frame)
 
         # Enhance contrast for all images
-        ir_left_image = self.enhance_contrast(ir_left_image, clip_limit=4.0)
-        ir_right_image = self.enhance_contrast(ir_right_image, clip_limit=4.0)
-        merged_depth_image = self.enhance_contrast(merged_depth_image, clip_limit=4.0)
+        # ir_left_image = self.enhance_contrast(ir_left_image, clip_limit=4.0)
+        # ir_right_image = self.enhance_contrast(ir_right_image, clip_limit=4.0)
+        # merged_depth_image = self.enhance_contrast(merged_depth_image, clip_limit=4.0)
 
         
         
