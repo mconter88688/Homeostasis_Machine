@@ -24,7 +24,7 @@ class Camera:
                                         ob.OBSensorType.COLOR_SENSOR
                                     ]
         self.hdr_filter = None
-        self.frames_queue = ob.Queue()
+        self.frames_queue = Queue()
         # cached frames for better visualization
         self.cached_frames = {
             'color': None,
