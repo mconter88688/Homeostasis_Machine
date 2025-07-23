@@ -14,6 +14,7 @@ import models as mod
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import camera as cam
 
 # CONFIGURATION
 print("Starting configuration!")
@@ -102,14 +103,12 @@ def extract_feature(frame):
     feats = feature_extractor(tensor) # use feature extractor on adjusted frame
     return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
 
-for cam in range(5):
-    cap = cv2.VideoCapture(cam)
-    if cap.isOpened():
-        CAM_INDEX = cam
-        break
-else:
-    raise RuntimeError("No USB camera found.")  
-print("Camera Found!")
+camera = cam.Camera()
+camera.configure_streams()
+camera.configure_HDR()
+camera.start()
+# cv2.namedWindow(cons.WINDOW_NAME, cv2.WINDOW_NORMAL)
+# cv2.resizeWindow(cons.WINDOW_NAME, 1280, 960)  # Adjusted for 2x2 layout
 
 
 class NormalDataTraining(fsm.State):
@@ -120,28 +119,29 @@ class NormalDataTraining(fsm.State):
 
     def Enter(self):
         print("Normal Feedback Data Mode")
-        self.num_frames = 0
+        camera.number = 0
+        camera.state = "NormalDataTraining"
 
     
     def Execute(self):
         # Train on only normal feedback
-        ret, frame = cap.read()
+        ret, frame, processed_frames = camera.one_capture()
         if not ret:
-            print("Unsuccessful frame capture. Going to Menu...")
-            self.FSM.Transition("toMenu")
+            # print("Unsuccessful frame capture. Going to Menu...")
+            # self.FSM.Transition("toMenu")
             return
-        feat = extract_feature(frame)
+        feat = extract_feature(frame[0])
         buffer.append(feat)
         if len(buffer) == cons.SEQ_LEN:
             self.model_data.append_normal_data(np.stack(buffer))
-        
-        cv2.putText(frame, f"{self.num_frames}", (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
-        cv2.imshow("Anomaly Detector", frame)
+        # Create and display the combined view
+        display = camera.create_display(processed_frames)
+        cv2.imshow("Normal Training Views", display)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
             self.FSM.Transition("toMenu")
-        self.num_frames+=1
+        camera.number+=1
 
 
     def Exit(self):
@@ -447,14 +447,15 @@ class RLHF(fsm.State):
     def Enter(self):
         print("Human Feedback Mode")
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
+        camera.state = "RLHF"
 
     def Execute(self):
-        ret, frame = cap.read()
+        ret, frame, processed_frames = camera.one_capture()
         if not ret:
-            print("Unsuccessful frame capture. Going to Menu...")
-            self.FSM.Transition("toMenu")
+            # print("Unsuccessful frame capture. Going to Menu...")
+            # self.FSM.Transition("toMenu")
             return
-        feat = extract_feature(frame)
+        feat = extract_feature(frame[0])
         buffer.append(feat) # add 1D array to end of the buffer
 
         label = "N/A"
@@ -462,13 +463,13 @@ class RLHF(fsm.State):
             seq = np.expand_dims(np.stack(buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
             pred = temporal_model.predict(seq, verbose=0)[0][0] # gets the number spit out by the temporal model
             is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
-            label = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+            camera.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
             color = (0,0,255) if is_anomaly else (0,255,0)
 
             # Draw on frame
-            cv2.putText(frame, label, (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-
-        cv2.imshow("Anomaly Detector", frame)
+        display = camera.create_display(processed_frames)
+        cv2.imshow("Anomaly Detector", display)
+       
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):

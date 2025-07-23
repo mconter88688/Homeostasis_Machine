@@ -10,7 +10,7 @@ else
     echo "Activating virtual environment..."
     source ~/"$ENV_NAME"/bin/activate
 fi
-
+export PYTHONPATH=$PYTHONPATH:~/pyorbbecsdk/examples
 #export QT_QPA_PLATFORM=eglfs
 
 echo "Running Python script..."
