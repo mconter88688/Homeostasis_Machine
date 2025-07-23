@@ -135,7 +135,7 @@ class NormalDataTraining(fsm.State):
         if len(buffer) == cons.SEQ_LEN:
             self.model_data.append_normal_data(np.stack(buffer))
         # Create and display the combined view
-        display = self.create_display(processed_frames)
+        display = camera.create_display(processed_frames)
         cv2.imshow("Normal Training Views", display)
         key = cv2.waitKey(1) & 0xFF
 
