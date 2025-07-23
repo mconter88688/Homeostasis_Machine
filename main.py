@@ -127,8 +127,8 @@ class NormalDataTraining(fsm.State):
         # Train on only normal feedback
         ret, frame = camera.one_capture()
         if not ret:
-            print("Unsuccessful frame capture. Going to Menu...")
-            self.FSM.Transition("toMenu")
+            # print("Unsuccessful frame capture. Going to Menu...")
+            # self.FSM.Transition("toMenu")
             return
         feat = extract_feature(frame[0])
         buffer.append(feat)
