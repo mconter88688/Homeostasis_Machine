@@ -60,6 +60,8 @@ class Data:
     
 
 ### Testing New Code ####
+cv2.namedWindow(cons.WINDOW_NAME, cv2.WINDOW_NORMAL)
+cv2.resizeWindow(cons.WINDOW_NAME, 1280, 960)  # Adjusted for 2x2 layout
 camera = cam.Camera()
 camera.configure_streams()
 camera.configure_HDR()
