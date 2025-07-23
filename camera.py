@@ -90,7 +90,11 @@ class Camera:
         left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME)
         right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME)
 
-        
+        if not all([depth_frame, left_ir_frame, right_ir_frame]):
+                return_vals[0] = False
+                return return_vals
+
+
         ir_left = np.frombuffer(left_ir_frame.get_data(), dtype=np.uint8).reshape(
             (left_ir_frame.get_height(), left_ir_frame.get_width())
         )
