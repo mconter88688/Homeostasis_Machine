@@ -68,6 +68,8 @@ camera.configure_HDR()
 camera.start()
 while True:
     camera.one_capture()
+    if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
+        break
 
 
 ### SETUP ###

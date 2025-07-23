@@ -179,11 +179,11 @@ class Camera:
         if not frame:
             return None
         depth_frame = frame.get_depth_frame()
-        depth_frame = depth_frame if depth_frame else self.cached_frames['depth']
+        depth_frame = depth_frame if depth_frame else self.cached_frames['hdr']
         if not depth_frame:
             return None
         try:
-            self.cached_frames['depth'] = depth_frame
+            self.cached_frames['hdr'] = depth_frame
         except ValueError:
             print("Error processing depth frame")
             return None
@@ -242,7 +242,7 @@ class Camera:
 
         # Always show color and depth in top row if available
         place_frame(processed_frames.get('color'), 0, 0, w, h)
-        place_frame(processed_frames.get('depth'), w, 0, width, h)
+        place_frame(processed_frames.get('hdr'), w, 0, width, h)
 
         # Show stereo IR in bottom row
         place_frame(processed_frames['left_ir'], 0, h, w, height)
