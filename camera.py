@@ -74,7 +74,7 @@ class Camera:
             return
         
     def one_capture(self):
-        return_vals = [True, None]
+        return_vals = [True, None, None]
         if self.frames_queue.empty():
             return_vals[0] = False
             return return_vals
@@ -148,7 +148,7 @@ class Camera:
             'left_ir': ir_left_image,
             'right_ir': ir_right_image
         }
-        
+
         return [True, [color_image, merged_depth_in_mm, ir_left, ir_right], processed_frames]
 
     
