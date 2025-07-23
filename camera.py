@@ -13,8 +13,8 @@ MAX_DEPTH = 10000  # 10000mm
 
 class Camera:
     def __init__(self):
-        self.pipeline = ob.Pipeline()
-        self.device = self.Pipeline.get_device()
+        self.pipeline = ob.pipeline()
+        self.device = self.pipeline.get_device()
         self.config = ob.Config()
         self.sensor_list = self.device.get_sensor_list()
         self.video_sensor_types = [
@@ -286,5 +286,5 @@ class Camera:
     
     
     def stop(self):
-        self.Pipeline.stop()
+        self.pipeline.stop()
         cv2.destroyAllWindows()
