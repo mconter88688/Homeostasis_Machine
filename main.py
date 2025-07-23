@@ -125,7 +125,7 @@ class NormalDataTraining(fsm.State):
     
     def Execute(self):
         # Train on only normal feedback
-        ret, frame = camera.one_capture()
+        ret, frame, processed_frames = camera.one_capture()
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
@@ -134,7 +134,9 @@ class NormalDataTraining(fsm.State):
         buffer.append(feat)
         if len(buffer) == cons.SEQ_LEN:
             self.model_data.append_normal_data(np.stack(buffer))
-        
+        # Create and display the combined view
+        display = self.create_display(processed_frames)
+        cv2.imshow("Normal Training Views", display)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):

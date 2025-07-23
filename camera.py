@@ -148,11 +148,8 @@ class Camera:
             'left_ir': ir_left_image,
             'right_ir': ir_right_image
         }
-
-        # Create and display the combined view
-        display = self.create_display(processed_frames)
-        cv2.imshow("Orbbec Camera Viewer", display)
-        return [True, [color_image, merged_depth_in_mm, ir_left, ir_right]]
+        
+        return [True, [color_image, merged_depth_in_mm, ir_left, ir_right], processed_frames]
 
     
     def process_color(self, frame):
