@@ -145,7 +145,7 @@ class Camera:
             print("Error processing color frame")
             return None
 
-    def create_depth_image(depth_frame):
+    def create_depth_image(self, depth_frame):
         """Convert depth frame to colorized image"""
         width = depth_frame.get_width()
         height = depth_frame.get_height()
@@ -161,7 +161,7 @@ class Camera:
         return cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
 
 
-    def create_ir_image(ir_frame):
+    def create_ir_image(self, ir_frame):
         """Convert IR frame to displayable image with enhanced contrast"""
         ir_frame = ir_frame.as_video_frame()
         width = ir_frame.get_width()
@@ -209,7 +209,7 @@ class Camera:
             self.frames_queue.get()
         self.frames_queue.put(frame)
     
-    def create_display(processed_frames, width=1280, height=720):
+    def create_display(self, processed_frames, width=1280, height=720):
         """Create display window with all processed frames
         Layout:
         2x2 grid :
