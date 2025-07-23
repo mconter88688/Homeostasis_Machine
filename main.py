@@ -59,6 +59,15 @@ class Data:
         return (len(self.normal_data) == 0 and len(self.anomaly_data) == 0)
     
 
+### Testing New Code ####
+camera = cam.Camera()
+camera.configure_streams()
+camera.configure_HDR()
+camera.start()
+while True:
+    camera.one_capture()
+
+
 ### SETUP ###
 # Load previous feedback data if it exists
 

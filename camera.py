@@ -288,10 +288,3 @@ class Camera:
     def stop(self):
         self.Pipeline.stop()
         cv2.destroyAllWindows()
-
-camera = Camera()
-camera.configure_streams()
-camera.configure_HDR()
-camera.start()
-while True:
-    camera.one_capture()
