@@ -94,10 +94,10 @@ class Camera:
 
 
         ir_left = np.frombuffer(left_ir_frame.get_data(), dtype=np.uint8).reshape(
-            (left_ir_frame.height(), left_ir_frame.width())
+            (left_ir_frame.get_height(), left_ir_frame.get_width())
         )
         ir_right = np.frombuffer(right_ir_frame.get_data(), dtype=np.uint8).reshape(
-            (right_ir_frame.height(), right_ir_frame.width())
+            (right_ir_frame.get_height(), right_ir_frame.get_width())
         )
         color_image = self.process_color(frame_set)
         
@@ -118,8 +118,8 @@ class Camera:
         merged_depth_frame = merged_frames.get_depth_frame()
 
         if merged_depth_frame.get_format() == ob.OBFormat.Y16:
-            width = merged_depth_frame.width()
-            height = merged_depth_frame.height()
+            width = merged_depth_frame.get_width()
+            height = merged_depth_frame.get_height()
             scale = merged_depth_frame.get_depth_scale()
 
             merged_depth_data = np.frombuffer(merged_depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
