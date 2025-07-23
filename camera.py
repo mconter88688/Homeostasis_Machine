@@ -56,8 +56,6 @@ class Camera:
         except Exception as e:
             print(e)
         
-        self.pipeline.enable_frame_sync() # sync all sensor frames
-        
     def configure_HDR(self):
         confighdr = ob.OBHdrConfig()
         confighdr.enable = True
@@ -87,8 +85,8 @@ class Camera:
             return return_vals
 
         depth_frame = self.safe_get_depth(frame_set)
-        left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME)
-        right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME)
+        left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME).as_video_frame()
+        right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME).as_video_frame()
 
         if not all([depth_frame, left_ir_frame, right_ir_frame]):
                 return_vals[0] = False
@@ -96,10 +94,10 @@ class Camera:
 
 
         ir_left = np.frombuffer(left_ir_frame.get_data(), dtype=np.uint8).reshape(
-            (left_ir_frame.get_height(), left_ir_frame.get_width())
+            (left_ir_frame.height(), left_ir_frame.width())
         )
         ir_right = np.frombuffer(right_ir_frame.get_data(), dtype=np.uint8).reshape(
-            (right_ir_frame.get_height(), right_ir_frame.get_width())
+            (right_ir_frame.height(), right_ir_frame.width())
         )
         color_image = self.process_color(frame_set)
         
@@ -120,8 +118,8 @@ class Camera:
         merged_depth_frame = merged_frames.get_depth_frame()
 
         if merged_depth_frame.get_format() == ob.OBFormat.Y16:
-            width = merged_depth_frame.get_width()
-            height = merged_depth_frame.get_height()
+            width = merged_depth_frame.width()
+            height = merged_depth_frame.height()
             scale = merged_depth_frame.get_depth_scale()
 
             merged_depth_data = np.frombuffer(merged_depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
