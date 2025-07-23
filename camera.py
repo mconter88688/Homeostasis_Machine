@@ -287,9 +287,9 @@ class Camera:
         add_label("Left IR", 0, h)
         add_label("Right IR", w, h)
         if self.state == "NormalDataTraining":
-            add_label(str(self.number), 2*w-30, 2*h-60)
+            add_label(str(self.number), w+30, h+30)
         else:
-            add_label
+            add_label("Hi", 0, 0)
         return display
     
     def enhance_contrast(self, image, clip_limit=3.0, tile_grid_size=(8, 8)):
