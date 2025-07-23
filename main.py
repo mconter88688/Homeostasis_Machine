@@ -120,7 +120,7 @@ class NormalDataTraining(fsm.State):
     def Enter(self):
         print("Normal Feedback Data Mode")
         camera.number = 0
-        camera.mode = "NormalDataTraining"
+        camera.state = "NormalDataTraining"
 
     
     def Execute(self):
