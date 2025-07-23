@@ -1,6 +1,6 @@
 import constants as cons
-from tensorflow.keras.models import Sequential # for model architecture and loading
-from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional # for neural network layers
+from tensorflow.keras.models import Sequential, Model # for model architecture and loading
+from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional, Input, ConvLSTM2D, TimeDistributed, Conv2D # for neural network layers
 
 
 
@@ -40,6 +40,17 @@ def build_one_way_7_18():
         Dense(1, activation='sigmoid')
     ])
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+def build_autoencoder_7_23_not_tested():
+    input_layer = Input(shape = (cons.INPUT_SHAPE))
+    x = ConvLSTM2D(16, (3,3), activation = 'relu', padding = 'same', return_sequences = True)(input_layer)
+    x = ConvLSTM2D(8, (3,3), actiavtion = 'relu', padding = 'same', return_sequences = True)(x)
+
+    output_layer = TimeDistributed(Conv2D(1, (3,3), activation = 'sigmoid', padding = 'same'))(x)
+
+    model = Model(input_layer, output_layer)
+    model.compile(optimizer = 'adam', loss = 'mse')
     return model
 
 
