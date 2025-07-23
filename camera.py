@@ -13,7 +13,7 @@ MAX_DEPTH = 10000  # 10000mm
 
 class Camera:
     def __init__(self):
-        self.pipeline = ob.pipeline()
+        self.pipeline = ob.Pipeline()
         self.device = self.pipeline.get_device()
         self.config = ob.Config()
         self.sensor_list = self.device.get_sensor_list()
