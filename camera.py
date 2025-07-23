@@ -19,13 +19,21 @@ class Camera:
                                         ob.OBSensorType.DEPTH_SENSOR,
                                         ob.OBSensorType.LEFT_IR_SENSOR,
                                         ob.OBSensorType.RIGHT_IR_SENSOR,
-                                        ob.OBSensorType.IR_SENSOR,
                                         ob.OBSensorType.COLOR_SENSOR
                                     ]
         self.hdr_filter = None
         self.frames_queue = ob.Queue()
+        # cached frames for better visualization
+        self.cached_frames = {
+            'color': None,
+            'depth': None,
+            'left_ir': None,
+            'right_ir': None,
+            'ir': None
+        }
+        self.stop_rendering = False
 
-    def ConfigureStreams(self):
+    def configure_streams(self):
         # enable all wanted streams
         for sensor in range(len(self.sensor_list)):
             sensor_type = self.sensor_list[sensor].get_type()
@@ -40,12 +48,15 @@ class Camera:
         
         # configure streams
         self.config.set_frame_aggregate_output_mode(ob.OBFrameAggregateOutputMode.FULL_FRAME_REQUIRE) # requires all frames to be from same timestamp
+        
         try:
             self.pipeline.enable_frame_sync() # hardware-level synchronization
         except Exception as e:
             print(e)
         
-    def ConfigureHDR(self):
+        self.pipeline.enable_frame_sync() # sync all sensor frames
+        
+    def configure_HDR(self):
         confighdr = ob.OBHdrConfig()
         confighdr.enable = True
         confighdr.exposure_1 = 7500
@@ -55,18 +66,123 @@ class Camera:
         self.device.set_hdr_config(confighdr)
         self.hdr_filter = ob.HDRMergeFilter()
     
-    def Start(self):
-        self.pipeline.enable_frame_sync() # sync all sensor frames
+    def start(self):
         try:
-            self.pipeline.start(self.config)
+            self.pipeline.start(self.config, lambda frames: self.on_new_frame_callback(frames))
         except Exception as e:
             print(e)
             return
         
+    def rendering_frames(self):
+        """Main rendering loop for processing and displaying frames"""
+        
+
+        # Create and configure display window
+        cv2.namedWindow("Orbbec Camera Viewer", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("Orbbec Camera Viewer", 1280, 720)
+
+        while not self.stop_rendering:
+            if self.frames_queue.empty():
+                continue
+
+            frame_set = self.frames_queue.get()
+            if frame_set is None:
+                continue
+
+            # Process all available frames
+            processed_frames = {
+                'color': self.process_color(frame_set),
+                'depth': self.process_depth(frame_set),
+                'left_ir': self.process_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME),
+                'right_ir': self.process_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME)
+            }
+
+            # Create and display the combined view
+            display = self.create_display(processed_frames)
+            cv2.imshow("Orbbec Camera Viewer", display)
+
+            # Check for exit key
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                return
+    
+    def process_color(self, frame):
+        """Process color frame to BGR image"""
+        if not frame:
+            return None
+        color_frame = frame.get_color_frame()
+        color_frame = color_frame if color_frame else self.cached_frames['color']
+        if not color_frame:
+            return None
+        try:
+            self.cached_frames['color'] = color_frame
+            return frame_to_bgr_image(color_frame)
+        except ValueError:
+            print("Error processing color frame")
+            return None
+
+    def process_depth(self, frame):
+        """Process depth frame to colorized depth image"""
+        if not frame:
+            return None
+        depth_frame = frame.get_depth_frame()
+        depth_frame = depth_frame if depth_frame else self.cached_frames['depth']
+        if not depth_frame:
+            return None
+        try:
+            depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
+            depth_data = depth_data.reshape(depth_frame.get_height(), depth_frame.get_width())
+            depth_image = cv2.normalize(depth_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+            self.cached_frames['depth'] = depth_frame
+            return cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
+        except ValueError:
+            print("Error processing depth frame")
+            return None
 
 
-    def Capture(self):
-        pass
+    def process_ir(self, frame, frame_type):
+        if frame is None:
+            return None
+        ir_frame = frame.get_frame(frame_type)
+        frame_name = 'left_ir' if frame_type == ob.OBFrameType.LEFT_IR_FRAME else 'right_ir'
+        ir_frame = ir_frame if ir_frame else self.cached_frames[frame_name]
+        if not ir_frame:
+            return None
+        ir_frame = ir_frame.as_video_frame()
+        self.cached_frames[frame_name] = ir_frame
+        ir_data = np.asanyarray(ir_frame.get_data())
+        width = ir_frame.get_width()
+        height = ir_frame.get_height()
+        ir_format = ir_frame.get_format()
+
+        if ir_format == ob.OBFormat.Y8:
+            ir_data = np.resize(ir_data, (height, width, 1))
+            data_type = np.uint8
+            image_dtype = cv2.CV_8UC1
+            max_data = 255
+        elif ir_format == ob.OBFormat.MJPG:
+            ir_data = cv2.imdecode(ir_data, cv2.IMREAD_UNCHANGED)
+            data_type = np.uint8
+            image_dtype = cv2.CV_8UC1
+            max_data = 255
+            if ir_data is None:
+                print("decode mjpeg failed")
+                return None
+            ir_data = np.resize(ir_data, (height, width, 1))
+        else:
+            ir_data = np.frombuffer(ir_data, dtype=np.uint16)
+            data_type = np.uint16
+            image_dtype = cv2.CV_16UC1
+            max_data = 255
+            ir_data = np.resize(ir_data, (height, width, 1))
+
+        cv2.normalize(ir_data, ir_data, 0, max_data, cv2.NORM_MINMAX, dtype=image_dtype)
+        ir_data = ir_data.astype(data_type)
+        return cv2.cvtColor(ir_data, cv2.COLOR_GRAY2RGB)
+
+
+    def capture(self):
+         pass
         
     def on_new_frame_callback(self, frame: ob.FrameSet):
         """Callback function to handle new frames"""
@@ -111,18 +227,9 @@ class Camera:
         place_frame(processed_frames.get('color'), 0, 0, w, h)
         place_frame(processed_frames.get('depth'), w, 0, width, h)
 
-        # Handle IR display in bottom row
-        has_left_ir = processed_frames.get('left_ir') is not None
-        has_right_ir = processed_frames.get('right_ir') is not None
-        has_single_ir = processed_frames.get('ir') is not None
-
-        if has_left_ir and has_right_ir:
-            # Show stereo IR in bottom row
-            place_frame(processed_frames['left_ir'], 0, h, w, height)
-            place_frame(processed_frames['right_ir'], w, h, width, height)
-        elif has_single_ir:
-            # Show single IR in bottom-left quadrant
-            place_frame(processed_frames['ir'], 0, h, w, height)
+        # Show stereo IR in bottom row
+        place_frame(processed_frames['left_ir'], 0, h, w, height)
+        place_frame(processed_frames['right_ir'], w, h, width, height)
 
         # Add labels to identify each stream
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -138,16 +245,12 @@ class Camera:
         # Add labels for each quadrant
         add_label("Color", 0, 0)
         add_label("HDR", w, 0)
-
-        if has_left_ir and has_right_ir:
-            add_label("Left IR", 0, h)
-            add_label("Right IR", w, h)
-        elif has_single_ir:
-            add_label("IR", 0, h)
+        add_label("Left IR", 0, h)
+        add_label("Right IR", w, h)
 
         return display
     
-    def EnhanceContrast(self, image, clip_limit=3.0, tile_grid_size=(8, 8)):
+    def enhance_contrast(self, image, clip_limit=3.0, tile_grid_size=(8, 8)):
         """
         Enhance image contrast using CLAHE
         """
@@ -160,14 +263,11 @@ class Camera:
             return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
         else:
             clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
-            return clahe.apply(image)
-        
-    
-        
-            
+            return clahe.apply(image)      
 
 
     
     
-    def Stop(self):
+    def stop(self):
         self.Pipeline.stop()
+        cv2.destroyAllWindows()
