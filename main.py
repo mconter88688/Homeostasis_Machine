@@ -447,14 +447,15 @@ class RLHF(fsm.State):
     def Enter(self):
         print("Human Feedback Mode")
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
+        camera.state = "RLHF"
 
     def Execute(self):
-        ret, frame = cap.read()
+        ret, frame, processed_frames = camera.one_capture()
         if not ret:
-            print("Unsuccessful frame capture. Going to Menu...")
-            self.FSM.Transition("toMenu")
+            # print("Unsuccessful frame capture. Going to Menu...")
+            # self.FSM.Transition("toMenu")
             return
-        feat = extract_feature(frame)
+        feat = extract_feature(frame[0])
         buffer.append(feat) # add 1D array to end of the buffer
 
         label = "N/A"
@@ -462,13 +463,13 @@ class RLHF(fsm.State):
             seq = np.expand_dims(np.stack(buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
             pred = temporal_model.predict(seq, verbose=0)[0][0] # gets the number spit out by the temporal model
             is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
-            label = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+            camera.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
             color = (0,0,255) if is_anomaly else (0,255,0)
 
             # Draw on frame
-            cv2.putText(frame, label, (10,30), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-
-        cv2.imshow("Anomaly Detector", frame)
+        display = camera.create_display(processed_frames)
+        cv2.imshow("Anomaly Detector", display)
+       
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
