@@ -44,14 +44,7 @@ def build_one_way_7_18():
 
 def build_autoencoder_7_23_not_tested():
     input_layer = Input(shape = (cons.INPUT_SHAPE))
-    x = ConvLSTM2D(16, (3,3), activation = 'relu', padding = 'same', return_sequences = True)(input_layer)
-    x = ConvLSTM2D(8, (3,3), actiavtion = 'relu', padding = 'same', return_sequences = True)(x)
-
-    output_layer = TimeDistributed(Conv2D(1, (3,3), activation = 'sigmoid', padding = 'same'))(x)
-
-    model = Model(input_layer, output_layer)
-    model.compile(optimizer = 'adam', loss = 'mse')
-    return model
+    x = ConvLSTM2D(32, (3,3), activation = 'relu', padding = 'same', return_sequences = True, strides = (2,2))(input_layer)
 
 
 class ModelConfigParam:
