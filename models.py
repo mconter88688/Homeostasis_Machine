@@ -1,8 +1,10 @@
 import constants as cons
+import numpy as np
 from tensorflow.keras.models import Sequential, Model # for model architecture and loading
-from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional, Input, ConvLSTM2D, TimeDistributed, Conv2D # for neural network layers
+from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
+from tensorflow.keras.optimizers import Adam
 
-
+############## MODELS ###########################
 
 def build_simple_7_17():
     m = Sequential([
@@ -45,7 +47,34 @@ def build_one_way_7_18():
 def build_autoencoder_7_23_not_tested():
     input_layer = Input(shape = (cons.INPUT_SHAPE))
     x = ConvLSTM2D(32, (3,3), activation = 'relu', padding = 'same', return_sequences = True, strides = (2,2))(input_layer)
+    x = LayerNormalization()(x)
+    
+    x = ConvLSTM2D(64, (3,3), activation='relu', padding = 'same', return_sequences=True, strides=(2,2))(x)
+    x = LayerNormalization()(x)
 
+    encoded = ConvLSTM2D(64, (3,3), activation='relu', padding='same', return_sequences=True)(x)
+
+    x = Conv3DTranspose(64, (3,3,3), strides=(1,2,2), padding='same', activation='relu')(encoded)
+    x = LayerNormalization()(x)
+
+    x = Conv3DTranspose(32, (3,3,3), strides=(1,2,2), padding='same', activation='relu')(x)
+    x = LayerNormalization()(x)
+
+    # decoded should have number of output channels as number of neurons
+    decoded = Conv3DTranspose(3, (3,3,3), padding='same', activation='sigmoid')(x)
+
+    model = Model(inputs=input_layer, outputs=decoded)
+    model.compile(optimizer=Adam(1e-4), loss='mse')
+    return model
+
+############# HELPER FUNCTIONS #########################################
+
+def compute_autoencoder_error(model, sequence):
+    reconstruction = model.predict(sequence)
+    errors = np.mean((reconstruction - sequence)**2, axis=(1,2,3,4))
+    return errors
+
+############## CLASSES ###############################################
 
 class ModelConfigParam:
     def __init__(self, epochs = 0, batch_size = 0, validation_split = 0, feedback_file = None, model_file = None):
