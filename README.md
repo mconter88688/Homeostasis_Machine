@@ -1,5 +1,6 @@
 # Homeostasis_Machine
 
+
 ## **Step 1: Feature Extraction**
 
 **Model Choice:** use [EfficientNet B0](https://docs.google.com/document/d/1FaLHgkX1yyqP3BC2HPN98mr7qGprXW4-m012bNmbNUU/edit?tab=t.0) (fast enough, lightweight enough, and accurate)

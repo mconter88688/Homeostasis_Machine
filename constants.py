@@ -1,0 +1,15 @@
+FEATURE_DIM = 1280
+SEQ_LEN = 20                # number of frames in sequence window
+#TOTAL_FRAMES = 10000
+MODEL_PATH = "homeostasis_model.h5"
+BEST_MODEL_PATH = "best_model.h5"
+FEEDBACK_FILE = "feedback.pkl"
+#NORMAL_DATA = []            # for feedback retraining
+#ANOMALY_DATA = []
+ANOMALY_THRESHOLD = 0.6     # threshold for non-homeostasis
+# MOBILE_NET_V2 = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
+EFFICIENT_NET_B0 = "https://tfhub.dev/google/efficientnet/b0/feature-vector/1"
+INPUT_SHAPE = (224, 224, 3)
+MODEL_FOLDER = "Models"
+DATA_FOLDER = "Data"
+WINDOW_NAME = "Camera Output"
