@@ -458,13 +458,12 @@ class RLHF(fsm.State):
         feat = extract_feature(frame[0])
         buffer.append(feat) # add 1D array to end of the buffer
 
-        label = "N/A"
+        
         if len(buffer) == cons.SEQ_LEN:
             seq = np.expand_dims(np.stack(buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
-            pred = temporal_model.predict(seq, verbose=0)[0][0] # gets the number spit out by the temporal model
+            pred = mod.model_prediction(temporal_model, seq, "normal") # gets the number spit out by the temporal model
             is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
             camera.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
-            color = (0,0,255) if is_anomaly else (0,255,0)
 
             # Draw on frame
         display = camera.create_display(processed_frames)

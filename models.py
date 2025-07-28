@@ -69,10 +69,13 @@ def build_autoencoder_7_23_not_tested():
 
 ############# HELPER FUNCTIONS #########################################
 
-def compute_autoencoder_error(model, sequence):
-    reconstruction = model.predict(sequence)
-    errors = np.mean((reconstruction - sequence)**2, axis=(1,2,3,4))
-    return errors
+def model_prediction(model, sequence, type):
+    if type == "autoencoder":
+        reconstruction = model.predict(sequence)
+        errors = np.mean((reconstruction - sequence)**2, axis=(1,2,3,4)) # average errors across all dimensions to get idea of how model did overall
+        return errors
+    else:
+        return model.predict(sequence, verbose=0)[0][0]
 
 ############## CLASSES ###############################################
 
