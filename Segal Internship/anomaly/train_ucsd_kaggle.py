@@ -1,4 +1,4 @@
-import constants as cons
+from . import constants as cons
 from models import build_bi_7_18
 from .dataset_utils_kaggle import load_ucsd_sequences, split_dataset
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
