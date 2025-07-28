@@ -1,6 +1,6 @@
 from . import constants as cons
 from models import build_bi_7_18
-from .dataset_utils_kaggle import load_ucsd_sequences, split_dataset
+from . import dataset_utils_kaggle
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import accuracy_score, roc_auc_score
 import numpy as np
