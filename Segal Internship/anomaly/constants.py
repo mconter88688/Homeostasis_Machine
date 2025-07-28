@@ -13,3 +13,4 @@ INPUT_SHAPE = (224, 224, 3)
 MODEL_FOLDER = "Models"
 DATA_FOLDER = "Data"
 WINDOW_NAME = "Camera Output"
+UCSD_FRAMES_PATH = "UCSDped2/Test"
