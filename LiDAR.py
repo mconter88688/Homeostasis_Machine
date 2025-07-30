@@ -66,7 +66,7 @@ class LD19:
                 confidence = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
                 angles.append(angle)
-                distances.append(distances)
+                distances.append(distance)
                 confidences.append(confidence)
             
             with self.lock:
