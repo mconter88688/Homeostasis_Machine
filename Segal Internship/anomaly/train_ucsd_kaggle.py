@@ -1,44 +1,47 @@
-from . import constants as cons
-from models import build_bi_7_18
-from . import dataset_utils_kaggle
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from sklearn.metrics import accuracy_score, roc_auc_score
+import os
+import cv2
 import numpy as np
+from sklearn.model_selection import train_test_split
+from constants import UCSD_TRAIN_PATH, UCSD_TEST_PATH, SEQ_LEN, INPUT_SHAPE
 
-print("Loading UCSD Ped2 Kaggle dataset...")
-X, y = load_ucsd_sequences()
-print(f"Loaded {len(y)} sequences")
+def load_ucsd_sequences():
+    """
+    Load UCSD Ped2 dataset sequences for training (normal only).
+    Returns:
+        X: numpy array of shape (num_sequences, SEQ_LEN, H, W, 3)
+        y: numpy array of shape (num_sequences,) with labels (all zeros for normal)
+    """
+    X = []
+    y = []
 
-X_train, X_test, y_train, y_test = split_dataset(X, y, train_size=0.6)
-print(f"Training on {len(y_train)} sequences, testing on {len(y_test)} sequences")
+    # iterate through each training video folder
+    for vid in sorted(os.listdir(UCSD_TRAIN_PATH)):
+        vid_path = os.path.join(UCSD_TRAIN_PATH, vid)
+        if not os.path.isdir(vid_path):
+            continue
 
-# Build model
-model = build_bi_7_18()
+        frames = sorted(os.listdir(vid_path))
+        # generate overlapping sequences
+        for i in range(len(frames) - SEQ_LEN + 1):
+            seq = []
+            for j in range(i, i + SEQ_LEN):
+                img_path = os.path.join(vid_path, frames[j])
+                img = cv2.imread(img_path)
+                if img is None:
+                    continue
+                img = cv2.resize(img, INPUT_SHAPE[:2])
+                img = img.astype("float32") / 255.0
+                seq.append(img)
+            if len(seq) == SEQ_LEN:
+                X.append(np.array(seq))
+                y.append(0)  # training = all normal
 
-callbacks = [
-    EarlyStopping(patience=3, restore_best_weights=True),
-    ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
-]
+    return np.array(X), np.array(y)
 
-# Train
-history = model.fit(
-    X_train, y_train,
-    validation_split=0.2,
-    epochs=10,
-    batch_size=8,
-    callbacks=callbacks,
-    verbose=1
-)
 
-# Save model
-model.save(cons.MODEL_PATH)
-print(f"Model saved at {cons.MODEL_PATH}")
+def split_dataset(X, y, train_size=0.6):
+    """
+    Split sequences into train/test sets.
+    """
+    return train_test_split(X, y, train_size=train_size, random_state=42, shuffle=True)
 
-# Evaluate
-y_prob = model.predict(X_test, verbose=0).squeeze()
-y_pred = (y_prob > cons.ANOMALY_THRESHOLD).astype(int)
-
-acc = accuracy_score(y_test, y_pred)
-auc = roc_auc_score(y_test, y_prob)
-
-print(f"Test Accuracy: {acc:.3f}, AUC: {auc:.3f}")
