@@ -18,12 +18,13 @@ class LD19:
         self.thread = None
         self.running = False
         self.lock = threading.Lock() # avoid race conditions in reading
-        self.latest_data = []
+        self.latest_data = [[],[],[]]
 
 
     def start(self):
-        if self.serial is None or  not self.serial.is_open:
+        if self.serial is None or not self.serial.is_open:
             self.serial = serial.Serial(self.port, self.baud_rate, timeout=TIMEOUT) #wait 1 sec for data
+            print("serial opened!")
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self._reader_thread, daemon=True)

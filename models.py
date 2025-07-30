@@ -79,8 +79,9 @@ def build_model():
 
 def feature_extractor_setup():
     FEATURE_URL = cons.EFFICIENT_NET_B0
-    return hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
     print("Feature extractor loaded!")
+    return hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
+    
 # Helper: extract feature from single frame
 def extract_feature(frame, feature_extractor):
     resized = cv2.resize(frame, (cons.INPUT_SHAPE[1], cons.INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1

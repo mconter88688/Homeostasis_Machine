@@ -31,10 +31,11 @@ class NormalDataTraining(fsm.State):
     def Execute(self):
         # Train on only normal feedback
         ret, frame, processed_frames = self.camera.one_capture()
-        ld_angle, ld_dist, ld_conf = self.lidar.get_scan()
-        for i in range(ld_angle):
-            print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
-        sleep(0.5)
+        if not self.lidar.get_scan():
+            ld_angle, ld_dist, ld_conf = self.lidar.get_scan()
+            for i in range(ld_angle):
+                print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
+            sleep(0.5)
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
@@ -365,10 +366,11 @@ class RLHF(fsm.State):
 
     def Execute(self):
         ret, frame, processed_frames = self.camera.one_capture()
-        ld_angle, ld_dist, ld_conf = self.lidar.get_scan()
-        for i in range(ld_angle):
-            print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
-        sleep(0.5)
+        if not self.lidar.get_scan():
+            ld_angle, ld_dist, ld_conf = self.lidar.get_scan()
+            for i in range(ld_angle):
+                print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
+            sleep(0.5)
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
