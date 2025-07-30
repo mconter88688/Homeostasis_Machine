@@ -15,14 +15,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import camera as cam
-
-# CONFIGURATION
-print("Starting configuration!")
-#CAM_INDEX              # USB camera index
-
-print("Configuration done!")
-
-buffer = deque(maxlen=cons.SEQ_LEN)
+import LiDAR as ld
+import time
 
 class Data:
     def __init__(self):
@@ -59,9 +53,26 @@ class Data:
         return (len(self.normal_data) == 0 and len(self.anomaly_data) == 0)
     
 
-### SETUP ###
-# Load previous feedback data if it exists
 
+
+# Build or load temporal model
+def build_model():
+    return mod.build_one_way_7_18()
+
+
+# Helper: extract feature from single frame
+def extract_feature(frame):
+    resized = cv2.resize(frame, (cons.INPUT_SHAPE[1], cons.INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
+    tensor = tf.expand_dims(resized.astype(np.float32), axis=0) # add batch dimension and convert numbers to floats
+    feats = feature_extractor(tensor) # use feature extractor on adjusted frame
+    return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
+
+
+### SETUP ###
+
+buffer = deque(maxlen=cons.SEQ_LEN)
+
+# Load previous feedback data if it exists
 model_data = Data()
 model_data.load_data(cons.FEEDBACK_FILE)
 print("Feedback file loaded")
@@ -87,28 +98,20 @@ FEATURE_URL = cons.EFFICIENT_NET_B0
 feature_extractor = hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
 print("Feature extractor loaded")
 
-# Build or load temporal model
-def build_model():
-    return mod.build_one_way_7_18()
-
 if os.path.exists(cons.MODEL_PATH):
     temporal_model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models
 else:
     temporal_model = build_model()
 
-# Helper: extract feature from single frame
-def extract_feature(frame):
-    resized = cv2.resize(frame, (cons.INPUT_SHAPE[1], cons.INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
-    tensor = tf.expand_dims(resized.astype(np.float32), axis=0) # add batch dimension and convert numbers to floats
-    feats = feature_extractor(tensor) # use feature extractor on adjusted frame
-    return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
-
 camera = cam.Camera()
 camera.configure_streams()
 camera.configure_HDR()
 camera.start()
-# cv2.namedWindow(cons.WINDOW_NAME, cv2.WINDOW_NORMAL)
-# cv2.resizeWindow(cons.WINDOW_NAME, 1280, 960)  # Adjusted for 2x2 layout
+
+ld19 = ld.LD19()
+ld19.start()
+
+
 
 
 class NormalDataTraining(fsm.State):
@@ -126,6 +129,10 @@ class NormalDataTraining(fsm.State):
     def Execute(self):
         # Train on only normal feedback
         ret, frame, processed_frames = camera.one_capture()
+        ld_angle, ld_dist, ld_conf = ld19.get_scan()
+        for i in range(ld_angle):
+            print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
+        time.sleep(0.5)
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
@@ -451,6 +458,10 @@ class RLHF(fsm.State):
 
     def Execute(self):
         ret, frame, processed_frames = camera.one_capture()
+        ld_angle, ld_dist, ld_conf = ld19.get_scan()
+        for i in range(ld_angle):
+            print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
+        time.sleep(0.5)
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
