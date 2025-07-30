@@ -1,5 +1,8 @@
 import constants as cons
 import numpy as np
+import cv2 
+import tensorflow as tf # for TensorFlow
+import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
 from tensorflow.keras.models import Sequential, Model # for model architecture and loading
 from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
 from tensorflow.keras.optimizers import Adam
@@ -68,6 +71,22 @@ def build_autoencoder_7_23_not_tested():
     return model
 
 ############# HELPER FUNCTIONS #########################################
+
+# Build or load temporal model
+def build_model():
+    return build_one_way_7_18()
+
+
+def feature_extractor_setup():
+    FEATURE_URL = cons.EFFICIENT_NET_B0
+    return hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
+    print("Feature extractor loaded!")
+# Helper: extract feature from single frame
+def extract_feature(frame, feature_extractor):
+    resized = cv2.resize(frame, (cons.INPUT_SHAPE[1], cons.INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
+    tensor = tf.expand_dims(resized.astype(np.float32), axis=0) # add batch dimension and convert numbers to floats
+    feats = feature_extractor(tensor) # use feature extractor on adjusted frame
+    return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
 
 def model_prediction(model, sequence, type):
     if type == "autoencoder":
