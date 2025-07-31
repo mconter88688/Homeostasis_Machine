@@ -25,9 +25,11 @@ python3 "$STREAM_SCRIPT" &
 STREAM_PID=$!
 
 
-echo "Running main logic script..."
-python3 "$PYTHON_SCRIPT" &
-MAIN_PID=$!
+echo "Running main logic script in a new terminal..."
+gnome-terminal -- bash -c "python3 \"$PYTHON_SCRIPT\"; echo 'Main script ended'; read -p 'Press Enter to close...'" &
+
+
+trap "echo 'Terminating...'; kill $STREAM_PID; exit" SIGINT
 
 
 sleep 2
@@ -41,4 +43,3 @@ fi
 
 
 wait $STREAM_PID
-wait $MAIN_PID
