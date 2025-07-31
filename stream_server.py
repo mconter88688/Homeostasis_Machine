@@ -10,8 +10,8 @@ def generate_frames():
     last_frame = None
     while True:
         try:
-            if os.path.exists(cons.IMAGE_PATH):
-                frame = cv2.imread(cons.IMAGE_PATH)
+            if os.path.exists(cons.STREAM_PATH):
+                frame = cv2.imread(cons.STREAM_PATH)
 
                 if frame is not None:
                     if last_frame is None or not (frame == last_frame).all():
