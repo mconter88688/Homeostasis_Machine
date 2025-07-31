@@ -5,7 +5,7 @@ import time
 import constants as cons
 
 app = Flask(__name__)
-
+print("Loaded constants from:", cons.__file__)
 def generate_frames():
     last_frame = None
     while True:
