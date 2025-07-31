@@ -1,3 +1,4 @@
+import cv2
 import constants as cons
 print("mod: cons")
 import numpy as np
