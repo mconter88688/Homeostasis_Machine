@@ -44,11 +44,14 @@ class LD19:
         
     def _reader_thread(self):
         while self.running:
+            print("reading tthread")
             header = self.serial.read(2) # read first 2 bytes
             if header != b'\x54\x2C':
+                print("wrong header")
                 continue
             packet = header + self.serial.read(PACKET_LENGTH - 2)
             if len(packet) != PACKET_LENGTH:
+                print("not the right amount of packets")
                 continue
             
             speed = struct.unpack('<H', packet[2:4])[0] / 64.0 # LiDAR's units are 64 ticks per RPM
