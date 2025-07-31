@@ -1,3 +1,4 @@
+import cv2
 import fsm as fsm
 print("fsm")
 from tensorflow.keras.models import load_model # for model architecture and loading
