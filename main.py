@@ -1,34 +1,20 @@
 import numpy
 import cv2
 import tensorflow as tf # for TensorFlow
-print("mtf")
 import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
-print("hub")
-from tensorflow.keras.models import Sequential, Model # for model architecture and loading
-print("tf.k.mod")
+from tensorflow.keras.models import Sequential, Model, load_model # for model architecture and loading
 from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
-print(" tf.k.layer")
 from tensorflow.keras.optimizers import Adam
-print("tf.k.mod")
 from collections import deque # for sliding window
-print("deque")
 import fsm as fsm
-print("fsm")
 import os # file and directory management
-print("os")
 import pickle
-print("pickle")
 import constants as cons
-print("cons")
 import models as mod
-print("mod")
 #from sklearn.model_selection import train_test_split
 import camera as cam
-print("camera")
 import LiDAR as ld
-print("lidar")
 import states
-print("states")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class Data:
@@ -112,8 +98,8 @@ camera.start()
 ld19 = ld.LD19()
 ld19.start()
 
-radar = RD03Protocol("/dev/ttyUSB1", enable_plot=False)
-
+radar = RD03Protocol("/dev/lidar", enable_plot=False)
+ 
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
