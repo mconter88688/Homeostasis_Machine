@@ -39,10 +39,12 @@ class NormalDataTraining(fsm.State):
             for i in range(ld_angle):
                 print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
             sleep(0.5)
+        else:
+            print("No lidar")
         try: 
             targets = self.radar.read_frame()
-            for target in targets:
-                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+            # for target in targets:
+            #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
             print(f"[Radar Error] {e}")
         if not ret:
@@ -126,6 +128,8 @@ class Menu(fsm.State):
             self.FSM.Transition("toLoadModel")
         elif answer == "D":
             self.FSM.Transition("toDocumentFeedback")
+        elif answer == "Q":
+            self.FSM.Transition("toEnd")
         else:
             print("Invalid input. Try again.")
 
@@ -384,8 +388,8 @@ class RLHF(fsm.State):
             sleep(0.5)
         try: 
             targets = self.radar.read_frame()
-            for target in targets:
-                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+            # for target in targets:
+            #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
             print(f"[Radar Error] {e}")
         if not ret:
