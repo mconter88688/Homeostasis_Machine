@@ -1,7 +1,5 @@
 import numpy
 import cv2
-import fsm as fsm
-print("fsm")
 import tensorflow as tf # for TensorFlow
 print("mtf")
 import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
@@ -14,6 +12,8 @@ from tensorflow.keras.optimizers import Adam
 print("tf.k.mod")
 from collections import deque # for sliding window
 print("deque")
+import fsm as fsm
+print("fsm")
 import os # file and directory management
 print("os")
 import pickle
