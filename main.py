@@ -1,3 +1,11 @@
+import os # file and directory management
+import ctypes
+
+os.environ["LD_PRELOAD"] = "/usr/lib/aarch64-linux-gnu/libgomp.so.1:/usr/lib/aarch64-linux-gnu/libatomic.so.1"
+
+ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
+ctypes.CDLL("libatomic.so.1", mode=ctypes.RTLD_GLOBAL)
+
 import numpy
 import cv2
 import tensorflow as tf # for TensorFlow
@@ -7,7 +15,6 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, Ba
 from tensorflow.keras.optimizers import Adam
 from collections import deque # for sliding window
 import fsm as fsm
-import os # file and directory management
 import pickle
 import constants as cons
 import models as mod
