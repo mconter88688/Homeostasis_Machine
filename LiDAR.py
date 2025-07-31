@@ -61,12 +61,14 @@ class LD19:
         
     def _reader_thread(self):
         while self.running:
-            print("reading tthread")
-            header = self.serial.read(2) # read first 2 bytes
-            if header != b'\x54\x2C':
+            first_byte = self.serial.read(1)
+            if first_byte !=b'\x54':
+                continue
+            second_byte = self.serial.read(1) # read first 2 bytes
+            if second_byte != b'\x2C':
                 print("wrong header")
                 continue
-            packet = header + self.serial.read(PACKET_LENGTH - 2)
+            packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
             if len(packet) != PACKET_LENGTH:
                 print("not the right amount of packets")
                 continue
