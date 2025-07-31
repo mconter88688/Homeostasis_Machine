@@ -1,11 +1,19 @@
 import constants as cons
+print("mod: cons")
 import numpy as np
+print("mod: np")
 import cv2 
+print("mod:  cv2")
 import tensorflow as tf # for TensorFlow
+print("mod: tf")
 import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
+print("mod: hub")
 from tensorflow.keras.models import Sequential, Model # for model architecture and loading
+print("mod: tf.k.mod")
 from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
+print("mod: tf.k.layer")
 from tensorflow.keras.optimizers import Adam
+print("mod: tf.k.opt")
 
 ############## MODELS ###########################
 
