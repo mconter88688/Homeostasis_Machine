@@ -68,16 +68,17 @@ class LD19:
                 first_byte = None
                 continue
             second_byte = self.serial.read(1) # read first 2 bytes
-            if second_byte != b'\x28':
-                print(first_byte + second_byte)
+            if second_byte != b'\x2C':
+                #print(first_byte + second_byte)
                 first_byte = second_byte
                 continue
             packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
+            print("good header!")
             first_byte = None
             if len(packet) != PACKET_LENGTH:
                 print("not the right amount of packets")
                 continue
-            
+            print("good length")
             speed = struct.unpack('<H', packet[2:4])[0] / 64.0 # LiDAR's units are 64 ticks per RPM
             start_angle = struct.unpack('<H', packet[4:6])[0] / 100.0 # LiDAR's units are degrees * 100
             end_angle = struct.unpack('<H', packet[30:32])[0] / 100.0
