@@ -231,23 +231,3 @@ class RD03Protocol:
             plt.close(self.fig)
         self._serial.close()
 
-# Example usage
-if __name__ == "__main__":
-    # Initialize protocol handler (adjust port name as needed)
-    protocol = RD03Protocol("/dev/ttyUSB0", enable_plot=True)  # Enable plotting
-
-    try:
-        print("Reading radar data...")
-        while True:
-            targets = protocol.read_frame()
-            if targets:
-                print("\nDetected Targets:")
-                for i, target in enumerate(targets, 1):
-                    print(f"Target {i}:")
-                    print(f"  Position: ({target.x_coord}mm, {target.y_coord}mm)")
-                    print(f"  Speed: {target.speed}cm/s")
-                    print(f"  Distance: {target.distance}mm")
-
-    except KeyboardInterrupt:
-        print("\nClosing serial port...")
-        protocol.close()
