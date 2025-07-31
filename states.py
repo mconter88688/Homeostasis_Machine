@@ -427,9 +427,9 @@ class RLHF(fsm.State):
         cv2.destroyAllWindows()
 
 class End(fsm.State):
-    def __init__(self, FSM, program_running, radar, lidar, camera):
+    def __init__(self, FSM, model_data, radar, lidar, camera):
         self.FSM = FSM
-        self.program_running = program_running
+        self.model_data = model_data
         self.radar = radar
         self.lidar = lidar
         self.camera = camera
@@ -440,7 +440,7 @@ class End(fsm.State):
         self.radar.close()
         self.lidar.stop()
         cv2.destroyAllWindows()
-        self.program_running = False
+        self.model_data.program_running = False
 
     def Execute(self):
         pass

@@ -29,6 +29,7 @@ class Data:
         self.normal_data = []
         self.anomaly_data = []
         self.feature_extractor = feature_extractor
+        self.program_running = True
     
     def load_data(self, feedback_file):
         if os.path.exists(feedback_file):
@@ -66,7 +67,6 @@ class Data:
 
 
 ### SETUP ###
-program_running = True
 buffer = deque(maxlen=cons.SEQ_LEN)
 
 feature_extractor = mod.feature_extractor_setup()
@@ -118,7 +118,7 @@ hs_model.FSM.states["Menu"] = states.Menu(hs_model.FSM)
 hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, temporal_model)
 hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, temporal_model)
 hs_model.FSM.states["DocumentFeedback"] = states.DocumentFeedback(hs_model.FSM, model_params, model_data)
-hs_model.FSM.states["End"] = states.End(hs_model.FSM, program_running, radar, ld19, camera)
+hs_model.FSM.states["End"] = states.End(hs_model.FSM, model_data, radar, ld19, camera)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
@@ -131,5 +131,5 @@ hs_model.FSM.transitions["toEnd"] = fsm.Transition("End")
 
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")
-while program_running:
+while model_data.program_running:
     hs_model.FSM.Execute()

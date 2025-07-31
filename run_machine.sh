@@ -18,5 +18,5 @@ export PYTHONPATH=$PYTHONPATH:$HOME/pyorbbecsdk/examples
 export LD_PRELOAD="/usr/lib/aarch64-linux-gnu/libgomp.so.1:/usr/lib/aarch64-linux-gnu/libatomic.so.1"
 export PYTHONMALLOC=malloc
 
-echo "Running main logic script..."
+echo "Running main.py..."
 python3 "$PYTHON_SCRIPT"
