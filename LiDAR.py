@@ -12,7 +12,7 @@ PACKET_LENGTH = 42
 
 class LD19:
     def __init__(self):
-        self.baud_rate = 115200
+        self.baud_rate = 230400
         self.port = "/dev/lidar"
         self.serial = None
         self.thread = None
