@@ -18,7 +18,7 @@ fi
 
 
 export PYTHONPATH=$PYTHONPATH:$HOME/pyorbbecsdk/examples
-
+export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libgomp.so.1
 
 echo "Running streaming server..."
 python3 "$STREAM_SCRIPT" &
