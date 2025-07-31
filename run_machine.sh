@@ -18,7 +18,7 @@ fi
 
 
 export PYTHONPATH=$PYTHONPATH:$HOME/pyorbbecsdk/examples
-export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libgomp.so.1
+export LD_PRELOAD="/usr/lib/aarch64-linux-gnu/libgomp.so.1:/usr/lib/aarch64-linux-gnu/libatomic.so.1"
 export PYTHONMALLOC=malloc
 echo "Running streaming server..."
 python3 "$STREAM_SCRIPT" &
@@ -26,7 +26,11 @@ STREAM_PID=$!
 
 
 echo "Running main logic script in a new terminal..."
-gnome-terminal -- bash -c "python3 \"$PYTHON_SCRIPT\"; echo 'Main script ended'; read -p 'Press Enter to close...'" &
+gnome-terminal -- bash -c "source \"$VENV_PATH\" && \
+    export LD_PRELOAD=\"$LD_PRELOAD\" && \
+    export PYTHONMALLOC=malloc && \
+    python3 \"$PYTHON_SCRIPT\"; \
+    echo 'Main script ended'; read -p 'Press Enter to close...'" &
 
 
 trap "echo 'Terminating...'; kill $STREAM_PID; exit" SIGINT
