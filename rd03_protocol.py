@@ -1,14 +1,14 @@
 import serial
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Dict
-import logging
+#import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import math
 from collections import deque
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("RD03Protocol")
+# logging.basicConfig(level=logging.DEBUG)
+# logger = logging.getLogger("RD03Protocol")
 
 @dataclass
 class RadarTarget:
