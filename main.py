@@ -1,14 +1,25 @@
 import fsm as fsm
+print("fsm")
 from tensorflow.keras.models import load_model # for model architecture and loading
+print("tf.k.mod")
 from collections import deque # for sliding window
+print("deque")
 import os # file and directory management
+print("os")
 import pickle
+print("pickle")
 import constants as cons
+print("cons")
 import models as mod
+print("mod")
 #from sklearn.model_selection import train_test_split
 import camera as cam
+print("camera")
 import LiDAR as ld
+print("lidar")
 import states
+print("states")
+from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class Data:
     def __init__(self, feature_extractor):
@@ -52,7 +63,7 @@ class Data:
 
 
 ### SETUP ###
-
+program_running = True
 buffer = deque(maxlen=cons.SEQ_LEN)
 
 feature_extractor = mod.feature_extractor_setup()
@@ -91,17 +102,20 @@ camera.start()
 ld19 = ld.LD19()
 ld19.start()
 
+radar = RD03Protocol("/dev/ttyUSB1", enable_plot=False)
+
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, camera, ld19, buffer)
-hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, camera, ld19, buffer, temporal_model)
+hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, camera, ld19, buffer, radar)
+hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, camera, ld19, buffer, temporal_model, radar)
 hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data, model_params, temporal_model)
 hs_model.FSM.states["WipingModelAndFeedback"] = states.WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data)
 hs_model.FSM.states["Menu"] = states.Menu(hs_model.FSM)
 hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, temporal_model)
 hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, temporal_model)
 hs_model.FSM.states["DocumentFeedback"] = states.DocumentFeedback(hs_model.FSM, model_params, model_data)
+hs_model.FSM.states["End"] = states.End(hs_model.FSM, program_running, radar, ld19, camera)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
@@ -110,8 +124,9 @@ hs_model.FSM.transitions["toWipingModelAndFeedback"] = fsm.Transition("WipingMod
 hs_model.FSM.transitions["toDocumentModel"] = fsm.Transition("DocumentModel")
 hs_model.FSM.transitions["toLoadModel"] = fsm.Transition("LoadModel")
 hs_model.FSM.transitions["toDocumentFeedback"] = fsm.Transition("DocumentFeedback")
+hs_model.FSM.transitions["toEnd"] = fsm.Transition("End")
 
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")
-while True:
+while program_running:
     hs_model.FSM.Execute()

@@ -11,16 +11,17 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import models as mod
-
+from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class NormalDataTraining(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, buffer):
+    def __init__(self, FSM, model_data, camera, lidar, buffer, radar):
         self.FSM = FSM
         self.num_frames = 0
         self.model_data = model_data
         self.camera = camera
         self.lidar = lidar
         self.buffer = buffer
+        self.radar = radar
 
     def Enter(self):
         print("Normal Feedback Data Mode")
@@ -36,6 +37,12 @@ class NormalDataTraining(fsm.State):
             for i in range(ld_angle):
                 print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
             sleep(0.5)
+        try: 
+            targets = self.radar.read_frame()
+            for target in targets:
+                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+        except Exception as e:
+            print(f"[Radar Error] {e}")
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
@@ -98,6 +105,7 @@ class Menu(fsm.State):
         print("Document Your Currently Loaded Model...............M")
         print("Document Your Currently Loaded Data................D")
         print("Load in a Saved Model..............................L")
+        print("Exit...............................................Q")
 
             
     def Execute(self):
@@ -351,13 +359,14 @@ class DocumentModel(fsm.State):
 
 
 class RLHF(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, buffer, temporal_model):
+    def __init__(self, FSM, model_data, camera, lidar, buffer, temporal_model, radar):
         self.FSM = FSM
         self.model_data = model_data
         self.camera = camera
         self.lidar = lidar
         self.buffer = buffer
         self.temporal_model = temporal_model
+        self.radar
 
     def Enter(self):
         print("Human Feedback Mode")
@@ -371,6 +380,12 @@ class RLHF(fsm.State):
             for i in range(ld_angle):
                 print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
             sleep(0.5)
+        try: 
+            targets = self.radar.read_frame()
+            for target in targets:
+                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+        except Exception as e:
+            print(f"[Radar Error] {e}")
         if not ret:
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
@@ -404,3 +419,25 @@ class RLHF(fsm.State):
     def Exit(self):
         self.buffer.clear()
         cv2.destroyAllWindows()
+
+class End(fsm.State):
+    def __init__(self, FSM, program_running, radar, lidar, camera):
+        self.FSM = FSM
+        self.program_running = program_running
+        self.radar = radar
+        self.lidar = lidar
+        self.camera = camera
+
+    def Enter(self):
+        print("Ending...")
+        self.camera.stop()
+        self.radar.close()
+        self.lidar.stop()
+        cv2.destroyAllWindows()
+        self.program_running = False
+
+    def Execute(self):
+        pass
+
+    def End(self):
+        pass
