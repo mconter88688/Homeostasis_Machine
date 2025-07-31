@@ -55,7 +55,7 @@ class NormalDataTraining(fsm.State):
             self.model_data.append_normal_data(np.stack(self.buffer))
         # Create and display the combined view
         display = self.camera.create_display(processed_frames)
-        cv2.imwrite(cons.STREAM_PATH, display)
+        cv2.imshow("Normal data", display)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
@@ -216,7 +216,7 @@ class SavingModelAndFeedback(fsm.State):
 
                 img = cv2.imread(graph_path)
                 if img is not None:
-                    cv2.imwrite(cons.STREAM_PATH, img)
+                    cv2.imshow("Graph", img)
                     cv2.waitKey(0)
                     cv2.destroyAllWindows()
 
@@ -404,7 +404,7 @@ class RLHF(fsm.State):
 
             # Draw on frame
         display = self.camera.create_display(processed_frames)
-        cv2.imwrite(cons.STREAM_PATH, display)
+        cv2.imshow("Feedback Data", display)
        
         key = cv2.waitKey(1) & 0xFF
 
