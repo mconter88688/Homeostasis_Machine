@@ -69,8 +69,8 @@ class LD19:
                 continue
             second_byte = self.serial.read(1) # read first 2 bytes
             if second_byte != b'\x2C':
-                first_byte = second_byte
                 print(first_byte + second_byte)
+                first_byte = second_byte
                 continue
             packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
             first_byte = None
