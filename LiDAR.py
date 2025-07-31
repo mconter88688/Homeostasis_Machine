@@ -72,8 +72,8 @@ class LD19:
                 first_byte = second_byte
                 print(first_byte + second_byte)
                 continue
-            first_byte = None
             packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
+            first_byte = None
             if len(packet) != PACKET_LENGTH:
                 print("not the right amount of packets")
                 continue
