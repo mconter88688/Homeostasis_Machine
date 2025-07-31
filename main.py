@@ -98,8 +98,8 @@ camera.start()
 ld19 = ld.LD19()
 ld19.start()
 
-radar = RD03Protocol("/dev/lidar", enable_plot=False)
- 
+radar = RD03Protocol("/dev/ttyUSB0", enable_plot=False)
+
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()

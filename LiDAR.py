@@ -13,7 +13,7 @@ PACKET_LENGTH = 42
 class LD19:
     def __init__(self):
         self.baud_rate = 115200
-        self.port = "/dev/ttyUSB0"
+        self.port = "/dev/lidar"
         self.serial = None
         self.thread = None
         self.running = False
