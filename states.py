@@ -11,6 +11,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import models as mod
+import sys
+sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class NormalDataTraining(fsm.State):
