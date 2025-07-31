@@ -40,7 +40,8 @@ class NormalDataTraining(fsm.State):
                 print(ld_angle[i] + ", " +  ld_dist[i] + ", " + ld_conf[i])
             sleep(0.5)
         else:
-            print("No lidar")
+            pass
+            #print("No lidar")
         try: 
             targets = self.radar.read_frame()
             # for target in targets:

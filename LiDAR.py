@@ -149,6 +149,7 @@ class LD19:
             
             with self.lock:
                 self.latest_data = [angles, distances, confidences]
+                print("lidar updated")
 
 
         
