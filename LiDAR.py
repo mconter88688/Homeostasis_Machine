@@ -11,7 +11,7 @@ import time
 #Flow Control: None
 
 TIMEOUT = 1
-POINTS = 8
+POINTS = 12
 PACKET_LENGTH = 42
 BYTESIZE = serial.EIGHTBITS
 STOPBITS = serial.STOPBITS_ONE
@@ -60,15 +60,19 @@ class LD19:
             return list(self.latest_data) # make copy to ensure thread safety
         
     def _reader_thread(self):
+        first_byte = None
         while self.running:
-            first_byte = self.serial.read(1)
+            if not first_byte:
+                first_byte = self.serial.read(1)
             if first_byte !=b'\x54':
-                
+                first_byte = None
                 continue
             second_byte = self.serial.read(1) # read first 2 bytes
             if second_byte != b'\x2C':
+                first_byte = second_byte
                 print(first_byte + second_byte)
                 continue
+            first_byte = None
             packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
             if len(packet) != PACKET_LENGTH:
                 print("not the right amount of packets")
