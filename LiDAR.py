@@ -12,7 +12,7 @@ import time
 
 TIMEOUT = 1
 POINTS = 12
-PACKET_LENGTH = 42
+PACKET_LENGTH = 47
 BYTESIZE = serial.EIGHTBITS
 STOPBITS = serial.STOPBITS_ONE
 PARITY = serial.PARITY_NONE
@@ -73,13 +73,13 @@ class LD19:
                 first_byte = second_byte
                 continue
             packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
-            print("good header!")
+            #print("good header!")
             first_byte = None
             if len(packet) != PACKET_LENGTH:
                 print("not the right amount of packets")
                 continue
-            print("good length")
-            speed = struct.unpack('<H', packet[2:4])[0] / 64.0 # LiDAR's units are 64 ticks per RPM
+            #print("good length")
+            speed = struct.unpack('<H', packet[2:4])[0] / 360.0  # rotations per second
             start_angle = struct.unpack('<H', packet[4:6])[0] / 100.0 # LiDAR's units are degrees * 100
             end_angle = struct.unpack('<H', packet[30:32])[0] / 100.0
 
