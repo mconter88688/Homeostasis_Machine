@@ -1,7 +1,16 @@
+import numpy
 import cv2
 import fsm as fsm
 print("fsm")
-from tensorflow.keras.models import load_model # for model architecture and loading
+import tensorflow as tf # for TensorFlow
+print("mtf")
+import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
+print("hub")
+from tensorflow.keras.models import Sequential, Model # for model architecture and loading
+print("tf.k.mod")
+from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
+print(" tf.k.layer")
+from tensorflow.keras.optimizers import Adam
 print("tf.k.mod")
 from collections import deque # for sliding window
 print("deque")
