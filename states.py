@@ -368,7 +368,7 @@ class RLHF(fsm.State):
         self.lidar = lidar
         self.buffer = buffer
         self.temporal_model = temporal_model
-        self.radar
+        self.radar = radar
 
     def Enter(self):
         print("Human Feedback Mode")
