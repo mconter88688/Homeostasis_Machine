@@ -3,9 +3,19 @@ import threading
 import struct
 import time
 
+# LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
+#Baud Rate: 230400
+#Data Length: 8 bits
+#Stop Bit: 1
+#Parity: None
+#Flow Control: None
+
 TIMEOUT = 1
 POINTS = 8
 PACKET_LENGTH = 42
+BYTESIZE = serial.EIGHTBITS
+STOPBITS = serial.STOPBITS_ONE
+PARITY = serial.PARITY_NONE
 
 # Each point has 3 bytes: 2 for distance and 1 for confidence
 
@@ -23,7 +33,14 @@ class LD19:
 
     def start(self):
         if self.serial is None or not self.serial.is_open:
-            self.serial = serial.Serial(self.port, self.baud_rate, timeout=TIMEOUT) #wait 1 sec for data
+            self.serial = serial.Serial(port=self.port, 
+                                        baudrate=self.baud_rate, 
+                                        bytesize=BYTESIZE,
+                                        stopbits=STOPBITS,
+                                        parity=PARITY,
+                                        xonxoff=False,
+                                        rtscts=False,
+                                        timeout=TIMEOUT) #wait 1 sec for data
             print("serial opened!")
         if not self.running:
             self.running = True
