@@ -1,7 +1,7 @@
 import serial
 import threading
 import struct
-import time
+from time import sleep
 import numpy as np
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
@@ -149,7 +149,9 @@ class LD19:
             
             with self.lock:
                 self.latest_data = [angles, distances, confidences]
-                print("lidar updated")
+                print("Updated:", self.latest_data)
+                sleep(0.5)
+                #print("lidar updated")
 
 
         
