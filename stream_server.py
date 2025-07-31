@@ -9,17 +9,20 @@ app = Flask(__name__)
 def generate_frames():
     last_frame = None
     while True:
-        if os.path.exists(cons.IMAGE_PATH):
-            frame = cv2.imread(cons.IMAGE_PATH)
+        try:
+            if os.path.exists(cons.IMAGE_PATH):
+                frame = cv2.imread(cons.IMAGE_PATH)
 
-            if frame is not None:
-                if last_frame is None or not (frame == last_frame).all():
-                    ret, buffer = cv2.imencode('.jpg', frame)
-                    last_frame = frame.copy()
-                    frame_bytes = buffer.tobytes()
+                if frame is not None:
+                    if last_frame is None or not (frame == last_frame).all():
+                        ret, buffer = cv2.imencode('.jpg', frame)
+                        last_frame = frame.copy()
+                        frame_bytes = buffer.tobytes()
 
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                        yield (b'--frame\r\n'
+                            b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        except Exception as e:
+            print(f"[ERROR] Failed to generate frame: {e}")
 
         time.sleep(0.03)
 
