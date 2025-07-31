@@ -63,10 +63,11 @@ class LD19:
         while self.running:
             first_byte = self.serial.read(1)
             if first_byte !=b'\x54':
+                
                 continue
             second_byte = self.serial.read(1) # read first 2 bytes
             if second_byte != b'\x2C':
-                print("wrong header")
+                print(first_byte + second_byte)
                 continue
             packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
             if len(packet) != PACKET_LENGTH:
