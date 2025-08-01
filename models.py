@@ -3,6 +3,7 @@ import numpy as np
 import cv2 
 import tensorflow as tf # for TensorFlow
 import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
+from tensorflow.keras import layers, models
 from tensorflow.keras.models import Sequential, Model # for model architecture and loading
 from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
 from tensorflow.keras.optimizers import Adam
@@ -76,6 +77,24 @@ def build_autoencoder_7_23_not_tested():
 def build_model():
     return build_one_way_7_18()
 
+########### FEATURE EXTRACTORS ###########################################
+
+def build_ir_feature_extractor(input_shape=(96, 96, 1), output_dim=64):
+    model = models.Sequential([
+        layers.Input(shape=input_shape),
+
+        layers.Conv2D(16, (3, 3), activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+
+        layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+
+        layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+        layers.GlobalAveragePooling2D(),  # makes output shape (batch_size, 64)
+
+        layers.Dense(output_dim, activation='relu')  # bottleneck
+    ])
+    return model
 
 def feature_extractor_setup():
     FEATURE_URL = cons.EFFICIENT_NET_B0
