@@ -18,6 +18,25 @@ BYTESIZE = serial.EIGHTBITS
 STOPBITS = serial.STOPBITS_ONE
 PARITY = serial.PARITY_NONE
 
+class LidarData:
+    def __init__(self, timestamp, speed):
+        self.angles = []
+        self.distances = []
+        self.intensities = []
+        self.speed = speed
+        self.timestamp = timestamp
+
+    def append_all_lists(self, angle, distance, intensity):
+        self.angles.append(angle)
+        self.distances.append(distance)
+        self.intensities.append(intensity)
+
+
+
+
+
+
+
 crc_table = np.array([
     0x00, 0x4d, 0x9a, 0xd7, 0x79, 0x34, 0xe3, 0xae,
     0xf2, 0xbf, 0x68, 0x25, 0x8b, 0xc6, 0x11, 0x5c,
@@ -71,7 +90,7 @@ class LD19:
         self.thread = None
         self.running = False
         self.lock = threading.Lock() # avoid race conditions in reading
-        self.latest_data = [[],[],[]]
+        self.latest_data = None
 
 
     def start(self):
@@ -116,11 +135,13 @@ class LD19:
                 #print(first_byte + second_byte)
                 first_byte = second_byte
                 continue
-            packet = first_byte + second_byte + self.serial.read(PACKET_LENGTH - 2)
+            packet = bytearray(first_byte + second_byte)
+            packet += self.serial.read(PACKET_LENGTH - 2)
             #print("good header!")
             first_byte = None
             if len(packet) != PACKET_LENGTH:
                 print("not the right amount of packets")
+                self.serial.reset_input_buffer()
                 continue
             #print("good length")
             speed = struct.unpack('<H', packet[2:4])[0] / 360.0  # rotations per second
@@ -135,22 +156,18 @@ class LD19:
             angle_diff = (end_angle - start_angle + 360.0) % 360.0
             angle_increment = angle_diff / (POINTS - 1.0) # angle increment between 8 points
 
-            angles = []
-            distances = []
-            confidences = []
+            return_lidar_data = LidarData(timestamp, speed)
             for i in range(POINTS):
                 offset = 6 + i * 3
                 distance = struct.unpack('<H', packet[offset:offset+2])[0]
-                confidence = packet[offset+2]
+                intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
-                angles.append(angle)
-                distances.append(distance)
-                confidences.append(confidence)
+                return_lidar_data.append_all_lists(angle, distance, intensity)
             
             with self.lock:
-                self.latest_data = [angles, distances, confidences]
-                print("Updated:", self.latest_data)
-                sleep(0.5)
+                self.latest_data = return_lidar_data
+                # print("Updated:", self.latest_data)
+                # sleep(0.5)
                 #print("lidar updated")
 
 
