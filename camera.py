@@ -1,6 +1,6 @@
 from queue import Queue
-import cv2
 import numpy as np
+import cv2
 
 import pyorbbecsdk as ob
 from utils import frame_to_bgr_image

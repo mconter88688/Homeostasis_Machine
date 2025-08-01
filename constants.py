@@ -13,3 +13,5 @@ INPUT_SHAPE = (224, 224, 3)
 MODEL_FOLDER = "Models"
 DATA_FOLDER = "Data"
 WINDOW_NAME = "Camera Output"
+MODEL_TYPE = "autoencoder"
+STREAM_PATH = "latest.jpg"
