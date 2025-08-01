@@ -31,6 +31,13 @@ class LidarData:
         self.distances.append(distance)
         self.intensities.append(intensity)
 
+    def copy(self):
+        new_obj = LidarData(self.timestamp, self.speed)
+        new_obj.angles = self.angles.copy()
+        new_obj.distances = self.distances.copy()
+        new_obj.intensities = self.intensities.copy()
+        return new_obj
+
 
 
 
@@ -120,7 +127,7 @@ class LD19:
     
     def get_scan(self):
         with self.lock:
-            return list(self.latest_data) # make copy to ensure thread safety
+            return self.latest_data.copy() if self.latest_data else None # make copy to ensure thread safety
         
     def _reader_thread(self):
         first_byte = None
