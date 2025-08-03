@@ -49,7 +49,7 @@ def build_one_way_7_18():
     return model
 
 def build_autoencoder_7_23_not_tested():
-    input_layer = Input(shape = (cons.INPUT_SHAPE))
+    input_layer = Input(shape = (cons.COLOR_INPUT_SHAPE))
     x = ConvLSTM2D(32, (3,3), activation = 'relu', padding = 'same', return_sequences = True, strides = (2,2))(input_layer)
     x = LayerNormalization()(x)
     
@@ -79,7 +79,7 @@ def build_model():
 
 ########### FEATURE EXTRACTORS ###########################################
 
-def build_ir_feature_extractor(input_shape=(96, 96, 1), output_dim=64):
+def build_ir_feature_extractor(input_shape= cons.IR_INPUT_SHAPE, output_dim=64):
     model = models.Sequential([
         layers.Input(shape=input_shape),
 
@@ -99,11 +99,11 @@ def build_ir_feature_extractor(input_shape=(96, 96, 1), output_dim=64):
 def feature_extractor_setup():
     FEATURE_URL = cons.EFFICIENT_NET_B0
     print("Feature extractor loaded!")
-    return hub.KerasLayer(FEATURE_URL, input_shape= cons.INPUT_SHAPE, trainable=False)
+    return hub.KerasLayer(FEATURE_URL, input_shape= cons.COLOR_INPUT_SHAPE, trainable=False)
     
 # Helper: extract feature from single frame
 def extract_feature(frame, feature_extractor):
-    resized = cv2.resize(frame, (cons.INPUT_SHAPE[1], cons.INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
+    resized = cv2.resize(frame, (cons.COLOR_INPUT_SHAPE[1], cons.COLOR_INPUT_SHAPE[0])) / 255.0 # resize image and normalize pixel values (originally between 0 and 255) to between 0 and 1
     tensor = tf.expand_dims(resized.astype(np.float32), axis=0) # add batch dimension and convert numbers to floats
     feats = feature_extractor(tensor) # use feature extractor on adjusted frame
     return tf.squeeze(feats).numpy()  # shape (1280,), NumPy array
