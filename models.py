@@ -100,7 +100,7 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 
     model = Model(inputs=input_layer, outputs=decoded)
     model.compile(optimizer=Adam(1e-4), loss='mse')
-    model.summary()
+    #model.summary()
 
     return model
 
@@ -263,7 +263,7 @@ class Autoencoder:
             return np.mean(errors)
         
     def fit(self, model_params, train_data_x, train_data_y):
-        self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
+        return self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
 
     def is_buffer_long_enough(self):
         return len(self.buffer) == cons.SEQ_LEN
