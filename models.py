@@ -243,7 +243,7 @@ class Autoencoder:
         right_ir_features = self.extract_ir_features(frameset, 1)
 
         combined = np.concatenate([color_features, hdr_features,left_ir_features, right_ir_features], axis=0)
-        print(combined.shape())
+        print(combined.shape)
         return combined
         
     def feature_append(self, feat):
