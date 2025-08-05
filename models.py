@@ -187,7 +187,7 @@ class ModelConfigParam:
         self.model_file = model_file
 
 
-class Autoencoder:
+class ImageAutoencoder:
     def __init__(self):
         if os.path.exists(cons.MODEL_PATH):
             self.model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models

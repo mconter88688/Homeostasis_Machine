@@ -64,7 +64,7 @@ class Data:
 
 
 ### SETUP ###
-autoencoder = mod.Autoencoder()
+autoencoder = mod.ImageAutoencoder()
 autoencoder.feature_extractor_setup()
 
 model_data = Data()
