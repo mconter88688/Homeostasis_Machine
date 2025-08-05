@@ -73,7 +73,7 @@ def build_autoencoder_7_23_not_tested():
     model.compile(optimizer=Adam(1e-4), loss='mse')
     return model
 
-def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1536, latent_dim=256):
+def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256):
     input_layer = Input(shape=(seq_len, feature_dim))  # (batch, time, features)
 
     # --- Encoder ---
@@ -220,7 +220,7 @@ class Autoencoder:
         ir_tensor = tf.expand_dims(ir_resized.astype(np.float32), axis=0)
         ir_feats = self.ir_feature_extractor(ir_tensor)
         final_feats =  tf.squeeze(ir_feats).numpy()
-        print(final_feats)
+        #print(final_feats)
         return final_feats
 
     
@@ -232,7 +232,7 @@ class Autoencoder:
 
         hdr_feats = self.hdr_feature_extractor(hdr_tensor)
         final_feats = tf.squeeze(hdr_feats).numpy()
-        print(final_feats.shape)
+        #print(final_feats.shape)
         return final_feats
     
     def feature_extract_combine(self, frameset):
@@ -242,7 +242,7 @@ class Autoencoder:
         right_ir_features = self.extract_ir_features(frameset, 1)
 
         combined = np.concatenate([color_features, hdr_features,left_ir_features, right_ir_features], axis=0)
-        print(combined.shape)
+        #print(combined.shape)
         return combined
         
     def feature_append(self, feat):
