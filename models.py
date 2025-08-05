@@ -100,6 +100,7 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 
     model = Model(inputs=input_layer, outputs=decoded)
     model.compile(optimizer=Adam(1e-4), loss='mse')
+    model.summary()
 
     return model
 
