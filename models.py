@@ -215,26 +215,25 @@ class Autoencoder:
         
     def extract_ir_features(self, frameset, left_or_right):
         ir_resized = cv2.resize(frameset[left_or_right+2], (cons.IR_INPUT_SHAPE[1], cons.IR_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
-
-        if len(ir_resized.shape) == 2:
-            print("ir is 2")
-            ir_resized = ir_resized[..., np.newaxis]
+        ir_resized = ir_resized[..., np.newaxis]
 
         ir_tensor = tf.expand_dims(ir_resized.astype(np.float32), axis=0)
         ir_feats = self.ir_feature_extractor(ir_tensor)
-        return tf.squeeze(ir_feats).numpy()
+        final_feats =  tf.squeeze(ir_feats).numpy()
+        return final_feats
+
     
     def extract_hdr_features(self, frameset):
         hdr_resized = cv2.resize(frameset[1], (cons.HDR_INPUT_SHAPE[1], cons.HDR_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
-
-        if len(hdr_resized.shape) == 2:
-            print("hdr is 2")
-            hdr_resized = hdr_resized[..., np.newaxis]
+        hdr_resized = hdr_resized[..., np.newaxis]
+        print(final_feats.shape)
 
         hdr_tensor = tf.expand_dims(hdr_resized.astype(np.float32), axis=0)
 
         hdr_feats = self.hdr_feature_extractor(hdr_tensor)
-        return tf.squeeze(hdr_feats).numpy()
+        final_feats = tf.squeeze(hdr_feats).numpy()
+        print(final_feats.shape)
+        return final_feats
     
     def feature_extract_combine(self, frameset):
         color_features = self.extract_color_features(frameset)
