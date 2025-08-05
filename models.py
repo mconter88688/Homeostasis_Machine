@@ -217,6 +217,7 @@ class Autoencoder:
         ir_resized = cv2.resize(frameset[left_or_right+2], (cons.IR_INPUT_SHAPE[1], cons.IR_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
 
         if len(ir_resized.shape) == 2:
+            print("ir is 2")
             ir_resized = ir_resized[..., np.newaxis]
 
         ir_tensor = tf.expand_dims(ir_resized.astype(np.float32), axis=0)
@@ -227,6 +228,7 @@ class Autoencoder:
         hdr_resized = cv2.resize(frameset[1], (cons.HDR_INPUT_SHAPE[1], cons.HDR_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
 
         if len(hdr_resized.shape) == 2:
+            print("hdr is 2")
             hdr_resized = hdr_resized[..., np.newaxis]
 
         hdr_tensor = tf.expand_dims(hdr_resized.astype(np.float32), axis=0)
@@ -240,7 +242,9 @@ class Autoencoder:
         left_ir_features = self.extract_ir_features(frameset, 0)
         right_ir_features = self.extract_ir_features(frameset, 1)
 
-        return np.concatenate([color_features, hdr_features,left_ir_features, right_ir_features], axis=0)
+        combined = np.concatenate([color_features, hdr_features,left_ir_features, right_ir_features], axis=0)
+        print(combined.shape())
+        return combined
         
     def feature_append(self, feat):
         self.buffer.append(feat)
