@@ -93,7 +93,7 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
     x = Conv1DTranspose(256, kernel_size=3, strides=1, padding='same', activation='relu')(x)
     x = LayerNormalization()(x)
 
-    x = Conv1DTranspose(512, kernel_size=3, strides=2, padding='same', activation='relu')(x)
+    x = Conv1DTranspose(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
     x = LayerNormalization()(x)
 
     decoded = TimeDistributed(Dense(feature_dim, activation='linear'))(x)  # Match original input
