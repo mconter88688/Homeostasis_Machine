@@ -197,7 +197,7 @@ class SavingModelAndFeedback(fsm.State):
                 # Plot training & validation loss and accuracy
                 plt.figure(figsize=(10, 4))
 
-                plt.subplot(1, 2, 1)
+                #plt.subplot(1, 2, 1)
                 plt.plot(history.history['loss'], label='Train Loss')
                 plt.plot(history.history['val_loss'], label='Val Loss')
                 plt.title('Loss Over Epochs')
@@ -205,13 +205,13 @@ class SavingModelAndFeedback(fsm.State):
                 plt.ylabel('Loss')
                 plt.legend()
 
-                plt.subplot(1, 2, 2)
-                plt.plot(history.history['accuracy'], label='Train Acc')
-                plt.plot(history.history['val_accuracy'], label='Val Acc')
-                plt.title('Accuracy Over Epochs')
-                plt.xlabel('Epoch')
-                plt.ylabel('Accuracy')
-                plt.legend()
+                # plt.subplot(1, 2, 2)
+                # plt.plot(history.history['accuracy'], label='Train Acc')
+                # plt.plot(history.history['val_accuracy'], label='Val Acc')
+                # plt.title('Accuracy Over Epochs')
+                # plt.xlabel('Epoch')
+                # plt.ylabel('Accuracy')
+                # plt.legend()
 
                 plt.tight_layout()
 
