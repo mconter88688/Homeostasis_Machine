@@ -26,10 +26,9 @@ import states
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class Data:
-    def __init__(self, color_feature_extractor):
+    def __init__(self):
         self.normal_data = []
         self.anomaly_data = []
-        self.color_feature_extractor = color_feature_extractor
         self.program_running = True
     
     def load_data(self, feedback_file):
@@ -65,11 +64,10 @@ class Data:
 
 
 ### SETUP ###
-buffer = deque(maxlen=cons.SEQ_LEN)
+autoencoder = mod.Autoencoder()
+autoencoder.feature_extractor_setup()
 
-color_feature_extractor = mod.build_color_feature_extractor()
-# Load previous feedback data if it exists
-model_data = Data(color_feature_extractor)
+model_data = Data()
 model_data.load_data(cons.FEEDBACK_FILE)
 print("Feedback file loaded")
 
@@ -89,12 +87,6 @@ if not os.path.exists(data_folder_path):
 print("Feedback folder exists!")
 
 
-
-if os.path.exists(cons.MODEL_PATH):
-    temporal_model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models
-else:
-    temporal_model = mod.build_model()
-
 camera = cam.Camera()
 camera.configure_streams()
 camera.configure_HDR()
@@ -108,13 +100,13 @@ radar = RD03Protocol("/dev/ttyUSB0", enable_plot=False)
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, camera, ld19, buffer, radar)
-hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, camera, ld19, buffer, temporal_model, radar)
-hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data, model_params, temporal_model)
+hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, camera, ld19, radar, autoencoder)
+hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, camera, ld19, radar, autoencoder)
+hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data, model_params, autoencoder)
 hs_model.FSM.states["WipingModelAndFeedback"] = states.WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data)
 hs_model.FSM.states["Menu"] = states.Menu(hs_model.FSM)
-hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, temporal_model)
-hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, temporal_model)
+hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, autoencoder)
+hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, autoencoder)
 hs_model.FSM.states["DocumentFeedback"] = states.DocumentFeedback(hs_model.FSM, model_params, model_data)
 hs_model.FSM.states["End"] = states.End(hs_model.FSM, model_data, radar, ld19, camera)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")

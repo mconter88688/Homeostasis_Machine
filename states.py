@@ -16,13 +16,13 @@ sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class NormalDataTraining(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, buffer, radar):
+    def __init__(self, FSM, model_data, camera, lidar, radar, temporal_model):
         self.FSM = FSM
         self.num_frames = 0
         self.model_data = model_data
         self.camera = camera
         self.lidar = lidar
-        self.buffer = buffer
+        self.temporal_model = temporal_model
         self.radar = radar
 
     def Enter(self):
@@ -34,6 +34,8 @@ class NormalDataTraining(fsm.State):
     def Execute(self):
         # Train on only normal feedback
         ret, frame, processed_frames = self.camera.one_capture()
+        if not ret:
+            return
         lidar_scan = self.lidar.get_scan()
         if lidar_scan:
             print(lidar_scan.timestamp)
@@ -49,14 +51,10 @@ class NormalDataTraining(fsm.State):
             #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
             print(f"[Radar Error] {e}")
-        if not ret:
-            # print("Unsuccessful frame capture. Going to Menu...")
-            # self.FSM.Transition("toMenu")
-            return
-        feat = mod.extract_feature(frame[0], self.model_data.color_feature_extractor)
-        self.buffer.append(feat)
-        if len(self.buffer) == cons.SEQ_LEN:
-            self.model_data.append_normal_data(np.stack(self.buffer))
+        feat = self.temporal_model.feature_extract_combine(frame)
+        self.temporal_model.feature_append(feat)
+        if self.temporal_model.is_buffer_long_enough():
+            self.model_data.append_normal_data(np.stack(self.temporal_model.buffer))
         # Create and display the combined view
         display = self.camera.create_display(processed_frames)
         cv2.imshow("Normal data", display)
@@ -68,7 +66,7 @@ class NormalDataTraining(fsm.State):
 
 
     def Exit(self):
-        self.buffer.clear()
+        self.temporal_model.buffer.clear()
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
@@ -190,8 +188,8 @@ class SavingModelAndFeedback(fsm.State):
             # Create training sets
             X = np.array(self.model_data.normal_data + self.model_data.anomaly_data)
             y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-            history = self.temporal_model.fit(X, y, validation_split = self.model_params.validation_split,shuffle=self.model_params.shuffle, epochs=self.model_params.epochs, batch_size=self.model_params.batch_size, callbacks=self.model_params.callbacks)
-            self.temporal_model.save(cons.MODEL_PATH)
+            history = self.temporal_model.fit(self.model_params, X,X)
+            self.temporal_model.model.save(cons.MODEL_PATH)
             print("Model updated and saved.")
 
             answer = input("Would you like to graph the data? (Y/N)").strip().upper()
@@ -266,7 +264,7 @@ class LoadModel(fsm.State):
                 return
             if answer in os.listdir(cons.MODEL_FOLDER):
                 good_model = True
-                self.temporal_model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".h5"))
+                self.temporal_model.model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".h5"))
                 self.model_params.epochs = 0
                 self.model_params.batch_size = 0
                 self.model_params.validation_split = 0
@@ -344,7 +342,7 @@ class DocumentModel(fsm.State):
             else:
                 good_file = True
                 os.makedirs(folder_path)
-        self.temporal_model.save(file_path)
+        self.temporal_model.model.save(file_path)
         if (self.model_params.temp_graph != None) and os.path.exists(self.model_params.temp_graph):
             graph_target = os.path.join(folder_path, "training_plot.png")
             os.rename(self.model_params.temp_graph, graph_target)
@@ -367,7 +365,7 @@ class DocumentModel(fsm.State):
 
 
 class RLHF(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, buffer, temporal_model, radar):
+    def __init__(self, FSM, model_data, camera, lidar, buffer, radar, temporal_model):
         self.FSM = FSM
         self.model_data = model_data
         self.camera = camera
@@ -383,6 +381,8 @@ class RLHF(fsm.State):
 
     def Execute(self):
         ret, frame, processed_frames = self.camera.one_capture()
+        if not ret:
+            return
         lidar_scan = self.lidar.get_scan()
         if lidar_scan:
             for i in range(len(lidar_scan.angles)):
@@ -394,17 +394,13 @@ class RLHF(fsm.State):
             #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
             print(f"[Radar Error] {e}")
-        if not ret:
-            # print("Unsuccessful frame capture. Going to Menu...")
-            # self.FSM.Transition("toMenu")
-            return
-        feat = mod.color_extract_feature(frame[0], self.model_data.color_feature_extractor)
-        self.buffer.append(feat) # add 1D array to end of the buffer
+        
+        feat = self.temporal_model.feature_extract_combine(frame)
+        self.temporal_model.feature_append(feat) # add 1D array to end of the buffer
 
         
-        if len(self.buffer) == cons.SEQ_LEN:
-            seq = np.expand_dims(np.stack(self.buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
-            pred = mod.model_prediction(self.temporal_model, seq, "normal") # gets the number spit out by the temporal model
+        if self.temporal_model.is_buffer_long_enough():
+            pred = self.temporal_model.model_prediction()
             is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
             self.camera.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
 
@@ -417,15 +413,15 @@ class RLHF(fsm.State):
         if key == ord('q'):
             self.FSM.Transition("toMenu")
             return
-        elif key == ord('n') and len(self.buffer) == cons.SEQ_LEN:
+        elif key == ord('n') and self.temporal_model.is_buffer_long_enough():
             self.model_data.append_normal_data(np.stack(self.buffer))
             print("Labeled one normal sequence")
-        elif key == ord('a') and len(self.buffer) == cons.SEQ_LEN:
+        elif key == ord('a') and self.temporal_model.is_buffer_long_enough():
             self.model_data.append_anomaly_data(np.stack(self.buffer))
             print("Labeled one anomalous sequence")
 
     def Exit(self):
-        self.buffer.clear()
+        self.temporal_model.buffer.clear()
         cv2.destroyAllWindows()
 
 class End(fsm.State):

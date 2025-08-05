@@ -261,7 +261,8 @@ class Autoencoder:
     def fit(self, model_params, train_data_x, train_data_y):
         self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
 
-        
+    def is_buffer_long_enough(self):
+        return len(self.buffer) == cons.SEQ_LEN
         
     
 
