@@ -385,7 +385,7 @@ class RLHF(fsm.State):
         lidar_scan = self.lidar.get_scan()
         if lidar_scan:
             for i in range(len(lidar_scan.angles)):
-                print(lidar_scan.angles[i] + ", " +  lidar_scan.distances[i] + ", " + lidar_scan.intensities[i])
+                print(str(lidar_scan.angles[i]) + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
             sleep(0.5)
         try: 
             targets = self.radar.read_frame()
