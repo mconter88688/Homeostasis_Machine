@@ -53,7 +53,7 @@ class NormalDataTraining(fsm.State):
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
             return
-        feat = mod.extract_feature(frame[0], self.model_data.feature_extractor)
+        feat = mod.extract_feature(frame[0], self.model_data.color_feature_extractor)
         self.buffer.append(feat)
         if len(self.buffer) == cons.SEQ_LEN:
             self.model_data.append_normal_data(np.stack(self.buffer))
@@ -153,7 +153,7 @@ class SavingModelAndFeedback(fsm.State):
 
     def Execute(self):
         # Retrain model
-        callbacks = [
+        self.model_params.callbacks = [
                         EarlyStopping(patience=3, restore_best_weights=True),
                         ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                     ]
@@ -190,7 +190,7 @@ class SavingModelAndFeedback(fsm.State):
             # Create training sets
             X = np.array(self.model_data.normal_data + self.model_data.anomaly_data)
             y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
-            history = self.temporal_model.fit(X, y, validation_split = self.model_params.validation_split, shuffle=True, epochs=self.model_params.epochs, batch_size=self.model_params.batch_size, callbacks=callbacks)
+            history = self.temporal_model.fit(X, y, validation_split = self.model_params.validation_split,shuffle=self.model_params.shuffle, epochs=self.model_params.epochs, batch_size=self.model_params.batch_size, callbacks=self.model_params.callbacks)
             self.temporal_model.save(cons.MODEL_PATH)
             print("Model updated and saved.")
 
@@ -398,7 +398,7 @@ class RLHF(fsm.State):
             # print("Unsuccessful frame capture. Going to Menu...")
             # self.FSM.Transition("toMenu")
             return
-        feat = mod.extract_feature(frame[0], self.model_data.feature_extractor)
+        feat = mod.color_extract_feature(frame[0], self.model_data.color_feature_extractor)
         self.buffer.append(feat) # add 1D array to end of the buffer
 
         

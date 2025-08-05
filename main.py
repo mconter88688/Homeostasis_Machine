@@ -26,10 +26,10 @@ import states
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class Data:
-    def __init__(self, feature_extractor):
+    def __init__(self, color_feature_extractor):
         self.normal_data = []
         self.anomaly_data = []
-        self.feature_extractor = feature_extractor
+        self.color_feature_extractor = color_feature_extractor
         self.program_running = True
     
     def load_data(self, feedback_file):
@@ -64,15 +64,12 @@ class Data:
 
 
 
-
-
-
 ### SETUP ###
 buffer = deque(maxlen=cons.SEQ_LEN)
 
-feature_extractor = mod.feature_extractor_setup()
+color_feature_extractor = mod.build_color_feature_extractor()
 # Load previous feedback data if it exists
-model_data = Data(feature_extractor)
+model_data = Data(color_feature_extractor)
 model_data.load_data(cons.FEEDBACK_FILE)
 print("Feedback file loaded")
 
