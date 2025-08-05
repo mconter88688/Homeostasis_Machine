@@ -365,12 +365,11 @@ class DocumentModel(fsm.State):
 
 
 class RLHF(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, buffer, radar, temporal_model):
+    def __init__(self, FSM, model_data, camera, lidar, radar, temporal_model):
         self.FSM = FSM
         self.model_data = model_data
         self.camera = camera
         self.lidar = lidar
-        self.buffer = buffer
         self.temporal_model = temporal_model
         self.radar = radar
 
