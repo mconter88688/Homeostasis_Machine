@@ -224,7 +224,7 @@ class Autoencoder:
         return tf.squeeze(ir_feats).numpy()
     
     def extract_hdr_features(self, frameset):
-        hdr_resized = cv2.resize(frameset[1], (cons.HDR_INPUT_SHAPE_INPUT_SHAPE[1], cons.HDR_INPUT_SHAPE_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
+        hdr_resized = cv2.resize(frameset[1], (cons.HDR_INPUT_SHAPE[1], cons.HDR_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
 
         if len(hdr_resized.shape) == 2:
             hdr_resized = hdr_resized[..., np.newaxis]
