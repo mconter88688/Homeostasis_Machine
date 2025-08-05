@@ -220,13 +220,13 @@ class Autoencoder:
         ir_tensor = tf.expand_dims(ir_resized.astype(np.float32), axis=0)
         ir_feats = self.ir_feature_extractor(ir_tensor)
         final_feats =  tf.squeeze(ir_feats).numpy()
+        print(final_feats)
         return final_feats
 
     
     def extract_hdr_features(self, frameset):
         hdr_resized = cv2.resize(frameset[1], (cons.HDR_INPUT_SHAPE[1], cons.HDR_INPUT_SHAPE[0]), interpolation=cv2.INTER_AREA) / 255.0
         hdr_resized = hdr_resized[..., np.newaxis]
-        print(final_feats.shape)
 
         hdr_tensor = tf.expand_dims(hdr_resized.astype(np.float32), axis=0)
 
