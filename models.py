@@ -107,7 +107,7 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 
 # Build or load temporal model
 def build_model():
-    return build_one_way_7_18()
+    return build_autoencoder_8_4()
 
 ########### FEATURE EXTRACTORS ###########################################
 
