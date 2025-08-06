@@ -226,6 +226,9 @@ class RD03Protocol:
                         frame_data = bytearray()
                         header_found = False
 
+            else:
+                print("failing")
+
     def close(self):
         if self.off:
             return
