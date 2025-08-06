@@ -128,7 +128,7 @@ class RD03Protocol:
                         #print("complete frame")
                         if frame_data[-2:] == bytes([0x55, 0xCC]):
                             # Valid frame received, parse targets
-                            print("valid frame: " + len(frame_data))
+                            print("valid frame: " + str(len(frame_data)))
                             targets = []
                             data_start = 4  # After header
                             
