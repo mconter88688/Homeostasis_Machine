@@ -189,42 +189,42 @@ class RD03Protocol:
         frame_data = bytearray()
         header_found = False
         
-        while True:
-            if self._serial.in_waiting:
-                byte = ord(self._serial.read())
+        if self._serial.in_waiting:
+            byte = ord(self._serial.read())
+            print("read rd03d serial")
+            
+            if not header_found:
+                frame_data.append(byte)
+                # Check for header sequence
+                if len(frame_data) >= 4:
+                    if (frame_data[-4:] == bytes([0xAA, 0xFF, 0x03, 0x00])):
+                        header_found = True
+                        frame_data = frame_data[-4:]  # Keep only the header
+            elif header_found:
+                frame_data.append(byte)
                 
-                if not header_found:
-                    frame_data.append(byte)
-                    # Check for header sequence
-                    if len(frame_data) >= 4:
-                        if (frame_data[-4:] == bytes([0xAA, 0xFF, 0x03, 0x00])):
-                            header_found = True
-                            frame_data = frame_data[-4:]  # Keep only the header
-                elif header_found:
-                    frame_data.append(byte)
-                    
-                    # Check if we have a complete frame
-                    if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
-                        if frame_data[-2:] == bytes([0x55, 0xCC]):
-                            # Valid frame received, parse targets
-                            targets = []
-                            data_start = 4  # After header
+                # Check if we have a complete frame
+                if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
+                    if frame_data[-2:] == bytes([0x55, 0xCC]):
+                        # Valid frame received, parse targets
+                        targets = []
+                        data_start = 4  # After header
+                        
+                        for i in range(3):  # 3 possible targets
+                            target_data = frame_data[data_start + i*8:data_start + (i+1)*8]
+                            target = self._parse_target_data(target_data)
+                            if target is not None:
+                                targets.append(target)
+                        
+                        if self.enable_plot:
+                            self._update_plot(targets)
                             
-                            for i in range(3):  # 3 possible targets
-                                target_data = frame_data[data_start + i*8:data_start + (i+1)*8]
-                                target = self._parse_target_data(target_data)
-                                if target is not None:
-                                    targets.append(target)
-                            
-                            if self.enable_plot:
-                                self._update_plot(targets)
-                                
-                            return targets
-                            
-                        else:
-                            # Invalid frame, start over
-                            frame_data = bytearray()
-                            header_found = False
+                        return targets
+                        
+                    else:
+                        # Invalid frame, start over
+                        frame_data = bytearray()
+                        header_found = False
 
     def close(self):
         if self.off:
