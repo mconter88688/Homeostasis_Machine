@@ -46,7 +46,7 @@ class NormalDataTraining(fsm.State):
             pass
             #print("No lidar")
         try: 
-            targets = self.radar.read_frame()
+            targets = self.radar.get_scan()
             for target in targets:
                 print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
