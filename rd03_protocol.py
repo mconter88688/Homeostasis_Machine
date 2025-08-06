@@ -230,8 +230,6 @@ class RD03Protocol:
                 print("failing")
 
     def close(self):
-        if self.off:
-            return
         """Close the serial port"""
         if self.enable_plot:
             plt.close(self.fig)
