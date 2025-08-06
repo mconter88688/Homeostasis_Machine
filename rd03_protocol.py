@@ -82,9 +82,9 @@ class RD03Protocol:
         )
 
     def get_scan(self):
+        print("in get_scan")
         with self.lock:
             if not self.latest_data: 
-                print(self.latest_data)
                 return None 
             else:
                 targets = []
