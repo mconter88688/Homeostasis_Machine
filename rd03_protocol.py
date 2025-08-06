@@ -88,6 +88,7 @@ class RD03Protocol:
             else:
                 targets = []
                 for target in self.latest_data:
+                    print("scan found target")
                     targets.append(RadarTarget(
                         x_coord=target.x_coord,
                         y_coord=target.y_coord,
@@ -138,8 +139,8 @@ class RD03Protocol:
                                 if target is not None:
                                     # print("target " + str(i) + " found")
                                     targets.append(target)
-                            for target in targets:
-                                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+                            # for target in targets:
+                            #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
                             frame_data = bytearray()
                             header_found = False
                             with self.lock:
