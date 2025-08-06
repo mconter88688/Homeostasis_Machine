@@ -124,7 +124,7 @@ class RD03Protocol:
                     frame_data.append(byte)
                     
                     # Check if we have a complete frame
-                    if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
+                    if len(frame_data) == (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
                         #print("complete frame")
                         if frame_data[-2:] == bytes([0x55, 0xCC]):
                             # Valid frame received, parse targets
