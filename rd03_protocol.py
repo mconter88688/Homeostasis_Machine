@@ -226,8 +226,8 @@ class RD03Protocol:
                         frame_data = bytearray()
                         header_found = False
 
-            else:
-                print("failing")
+        else:
+            print("failing to be in waiting")
 
     def close(self):
         """Close the serial port"""
