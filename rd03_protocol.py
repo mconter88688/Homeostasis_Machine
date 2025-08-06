@@ -136,7 +136,7 @@ class RD03Protocol:
                                 target_data = frame_data[data_start + i*8:data_start + (i+1)*8]
                                 target = self._parse_target_data(target_data)
                                 if target is not None:
-                                    print("target " + str(i) + " found")
+                                    # print("target " + str(i) + " found")
                                     targets.append(target)
                             frame_data = bytearray()
                             header_found = False
