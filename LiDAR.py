@@ -11,7 +11,7 @@ import constants as cons
 #Parity: None
 #Flow Control: None
 
-TIMEOUT = 1
+
 POINTS = 12
 PACKET_LENGTH = 47
 BYTESIZE = serial.EIGHTBITS
@@ -109,7 +109,7 @@ class LD19:
                                         parity=PARITY,
                                         xonxoff=False,
                                         rtscts=False,
-                                        timeout=TIMEOUT) #wait 1 sec for data
+                                        timeout=cons.TIMEOUT) #wait 1 sec for data
             print("serial opened!")
         if not self.running:
             self.running = True

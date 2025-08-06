@@ -388,9 +388,9 @@ class RLHF(fsm.State):
                 print(str(lidar_scan.angles[i]) + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
             sleep(0.5)
         try: 
-            targets = self.radar.read_frame()
-            # for target in targets:
-            #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+            targets = self.radar.get_scan()
+            for target in targets:
+                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
             print(f"[Radar Error] {e}")
         

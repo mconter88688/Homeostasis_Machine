@@ -19,3 +19,4 @@ MODEL_TYPE = "autoencoder"
 STREAM_PATH = "latest.jpg"
 RD03D_PORT = "/dev/rd03"
 LIDAR_PORT = "/dev/lidar"
+TIMEOUT = 1
