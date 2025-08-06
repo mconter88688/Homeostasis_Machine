@@ -104,53 +104,54 @@ class RD03Protocol:
         frame_data = bytearray()
         header_found = False
         
-        if self.serial.in_waiting:
-            byte = ord(self.serial.read())
-            print("read rd03d serial")
-            
-            if not header_found:
-                print("no header found")
-                print(byte)
-                frame_data.append(byte)
-                # Check for header sequence
-                if len(frame_data) >= 4:
-                    if (frame_data[-4:] == bytes([0xAA, 0xFF, 0x03, 0x00])):
-                        header_found = True
-                        frame_data = frame_data[-4:]  # Keep only the header
-            elif header_found:
-                print("header found")
-                frame_data.append(byte)
+        while self.running:
+            if self.serial.in_waiting:
+                byte = ord(self.serial.read())
+                print("read rd03d serial")
                 
-                # Check if we have a complete frame
-                if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
-                    print("complete frame")
-                    if frame_data[-2:] == bytes([0x55, 0xCC]):
-                        # Valid frame received, parse targets
-                        print("valid frame")
-                        targets = []
-                        data_start = 4  # After header
-                        
-                        for i in range(3):  # 3 possible targets
-                            target_data = frame_data[data_start + i*8:data_start + (i+1)*8]
-                            target = self._parse_target_data(target_data)
-                            if target is not None:
-                                print("target " + str(i) + " found")
-                                targets.append(target)
-                        
-                        with self.lock:
-                            self.latest_data = targets    
-                        
-                        
-                    else:
-                        print("invalid frame")
-                        # Invalid frame, start over
-                        frame_data = bytearray()
-                        header_found = False
+                if not header_found:
+                    print("no header found")
+                    print(byte)
+                    frame_data.append(byte)
+                    # Check for header sequence
+                    if len(frame_data) >= 4:
+                        if (frame_data[-4:] == bytes([0xAA, 0xFF, 0x03, 0x00])):
+                            header_found = True
+                            frame_data = frame_data[-4:]  # Keep only the header
+                elif header_found:
+                    print("header found")
+                    frame_data.append(byte)
+                    
+                    # Check if we have a complete frame
+                    if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
+                        print("complete frame")
+                        if frame_data[-2:] == bytes([0x55, 0xCC]):
+                            # Valid frame received, parse targets
+                            print("valid frame")
+                            targets = []
+                            data_start = 4  # After header
+                            
+                            for i in range(3):  # 3 possible targets
+                                target_data = frame_data[data_start + i*8:data_start + (i+1)*8]
+                                target = self._parse_target_data(target_data)
+                                if target is not None:
+                                    print("target " + str(i) + " found")
+                                    targets.append(target)
+                            
+                            with self.lock:
+                                self.latest_data = targets    
+                            
+                            
+                        else:
+                            print("invalid frame")
+                            # Invalid frame, start over
+                            frame_data = bytearray()
+                            header_found = False
 
-        else:
-            print("failing to be in waiting")
+            else:
+                print("failing to be in waiting")
 
-    def close(self):
+    def stop(self):
         """Close the serial port"""
         self.running = False
         if self.thread:

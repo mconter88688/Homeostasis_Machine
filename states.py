@@ -434,7 +434,7 @@ class End(fsm.State):
     def Enter(self):
         print("Ending...")
         self.camera.stop()
-        self.radar.close()
+        self.radar.stop()
         self.lidar.stop()
         cv2.destroyAllWindows()
         self.model_data.program_running = False
