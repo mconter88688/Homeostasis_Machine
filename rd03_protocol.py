@@ -47,11 +47,12 @@ class RD03Protocol:
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=cons.TIMEOUT) #wait 1 sec for data
-            print("serial opened!")
+            print("rd03 serial opened!")
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self.read_frame, daemon=True)
             self.thread.start()
+            print("rd03 thread started!")
     
     def _decode_raw(self, value: int) -> float:
         """Decode a coordinate value according to the protocol specification"""
@@ -99,6 +100,7 @@ class RD03Protocol:
 
     def read_frame(self):
         """Read and parse a complete data frame from the radar"""
+        print("read_frame running")
         frame_data = bytearray()
         header_found = False
         
