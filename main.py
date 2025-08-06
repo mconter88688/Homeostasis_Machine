@@ -96,6 +96,7 @@ ld19 = ld.LD19()
 ld19.start()
 
 radar = RD03Protocol()
+radar.start()
 
 
 print("About to make HS_MODEL")
