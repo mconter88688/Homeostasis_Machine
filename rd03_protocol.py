@@ -138,6 +138,8 @@ class RD03Protocol:
                                 if target is not None:
                                     # print("target " + str(i) + " found")
                                     targets.append(target)
+                            for target in targets:
+                                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
                             frame_data = bytearray()
                             header_found = False
                             with self.lock:
