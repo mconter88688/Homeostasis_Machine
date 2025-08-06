@@ -107,6 +107,7 @@ class RD03Protocol:
         while self.running:
             if self.serial.in_waiting:
                 byte = ord(self.serial.read())
+                print(hex(byte))
                 #print("read rd03d serial")
                 
                 if not header_found:
@@ -124,7 +125,7 @@ class RD03Protocol:
                     
                     # Check if we have a complete frame
                     if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
-                        print("complete frame")
+                        #print("complete frame")
                         if frame_data[-2:] == bytes([0x55, 0xCC]):
                             # Valid frame received, parse targets
                             print("valid frame")
