@@ -107,11 +107,11 @@ class RD03Protocol:
         while self.running:
             if self.serial.in_waiting:
                 byte = ord(self.serial.read())
-                print("read rd03d serial")
+                #print("read rd03d serial")
                 
                 if not header_found:
-                    print("no header found")
-                    print(byte)
+                    # print("no header found")
+                    # print(byte)
                     frame_data.append(byte)
                     # Check for header sequence
                     if len(frame_data) >= 4:
@@ -119,7 +119,7 @@ class RD03Protocol:
                             header_found = True
                             frame_data = frame_data[-4:]  # Keep only the header
                 elif header_found:
-                    print("header found")
+                    # print("header found")
                     frame_data.append(byte)
                     
                     # Check if we have a complete frame
