@@ -1,16 +1,9 @@
 import serial
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Dict
-#import logging
-import matplotlib.pyplot as plt
-import numpy as np
-import math
-from collections import deque
+from typing import Optional
 import constants as cons
 import threading
 
-# logging.basicConfig(level=logging.DEBUG)
-# logger = logging.getLogger("RD03Protocol")
 
 @dataclass
 class RadarTarget:
@@ -157,7 +150,10 @@ class RD03Protocol:
 
     def close(self):
         """Close the serial port"""
-        if self.enable_plot:
-            plt.close(self.fig)
-        self._serial.close()
+        self.running = False
+        if self.thread:
+            self.thread.join()
+        if self.serial and self.serial.is_open:
+            self.serial.close()
+            self.serial = None
 
