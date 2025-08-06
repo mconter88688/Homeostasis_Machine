@@ -195,6 +195,7 @@ class RD03Protocol:
             
             if not header_found:
                 print("no header found")
+                print(byte)
                 frame_data.append(byte)
                 # Check for header sequence
                 if len(frame_data) >= 4:
