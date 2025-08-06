@@ -82,14 +82,14 @@ class RD03Protocol:
         )
 
     def get_scan(self):
-        print("in get_scan")
+        #print("in get_scan")
         with self.lock:
             if not self.latest_data: 
                 return None 
             else:
                 targets = []
                 for target in self.latest_data:
-                    print("scan found target")
+                    #print("scan found target")
                     targets.append(RadarTarget(
                         x_coord=target.x_coord,
                         y_coord=target.y_coord,
