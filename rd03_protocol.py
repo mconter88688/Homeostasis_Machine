@@ -28,7 +28,7 @@ class RD03Protocol:
 
     def __init__(self):
         """Initialize the RD03D Protocol handler with serial port settings"""
-        self._serial = None
+        self.serial = None
         self._state = self.WAITING_HEADER
         self._buffer = bytearray()
         self.baudrate = 256000
@@ -102,8 +102,8 @@ class RD03Protocol:
         frame_data = bytearray()
         header_found = False
         
-        if self._serial.in_waiting:
-            byte = ord(self._serial.read())
+        if self.serial.in_waiting:
+            byte = ord(self.serial.read())
             print("read rd03d serial")
             
             if not header_found:
