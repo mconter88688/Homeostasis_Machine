@@ -33,8 +33,6 @@ class RD03Protocol:
 
     def __init__(self, port: str, baudrate: int = 256000, enable_plot: bool = False):
         """Initialize the RD03D Protocol handler with serial port settings"""
-        self.off = True
-        return
         self._serial = serial.Serial(
             port=port,
             baudrate=baudrate,
@@ -186,8 +184,6 @@ class RD03Protocol:
         )
 
     def read_frame(self) -> List[RadarTarget]:
-        if self.off:
-            return False
         """Read and parse a complete data frame from the radar"""
         frame_data = bytearray()
         header_found = False
