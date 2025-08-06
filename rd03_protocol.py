@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 from collections import deque
+import constants as cons
 
 # logging.basicConfig(level=logging.DEBUG)
 # logger = logging.getLogger("RD03Protocol")
@@ -31,10 +32,10 @@ class RD03Protocol:
     # Number of positions to keep in trace history
     TRACE_LENGTH = 20
 
-    def __init__(self, port: str, baudrate: int = 256000, enable_plot: bool = False):
+    def __init__(self, baudrate: int = 256000, enable_plot: bool = False):
         """Initialize the RD03D Protocol handler with serial port settings"""
         self._serial = serial.Serial(
-            port=port,
+            port=cons.RD03D_PORT,
             baudrate=baudrate,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,

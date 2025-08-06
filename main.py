@@ -95,7 +95,7 @@ camera.start()
 ld19 = ld.LD19()
 ld19.start()
 
-radar = RD03Protocol("/dev/ttyUSB0", enable_plot=False)
+radar = RD03Protocol()
 
 
 print("About to make HS_MODEL")
