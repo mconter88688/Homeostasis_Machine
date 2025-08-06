@@ -194,6 +194,7 @@ class RD03Protocol:
             print("read rd03d serial")
             
             if not header_found:
+                print("no header found")
                 frame_data.append(byte)
                 # Check for header sequence
                 if len(frame_data) >= 4:
@@ -201,12 +202,15 @@ class RD03Protocol:
                         header_found = True
                         frame_data = frame_data[-4:]  # Keep only the header
             elif header_found:
+                print("header found")
                 frame_data.append(byte)
                 
                 # Check if we have a complete frame
                 if len(frame_data) >= (4 + 24 + 2):  # Header + 3*8 bytes data + Footer
+                    print("complete frame")
                     if frame_data[-2:] == bytes([0x55, 0xCC]):
                         # Valid frame received, parse targets
+                        print("valid frame")
                         targets = []
                         data_start = 4  # After header
                         
@@ -222,6 +226,7 @@ class RD03Protocol:
                         return targets
                         
                     else:
+                        print("invalid frame")
                         # Invalid frame, start over
                         frame_data = bytearray()
                         header_found = False
