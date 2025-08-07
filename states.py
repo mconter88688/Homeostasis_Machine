@@ -47,8 +47,11 @@ class NormalDataTraining(fsm.State):
             #print("No lidar")
         try: 
             targets = self.radar.get_scan()
-            for target in targets:
-                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+            if not targets:
+                print("No targets found")
+            else:
+                for target in targets:
+                    print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
         except Exception as e:
             print(f"[Radar Error] {e}")
         feat = self.temporal_model.feature_extract_combine(frame)
