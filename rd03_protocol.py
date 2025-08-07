@@ -64,8 +64,8 @@ class RD03Protocol:
 
     def _parse_target_data(self, data: bytes) -> Optional[RadarTarget]:
         """Parse 8 bytes of target data into a RadarTarget object"""
-        if all(b == 0 for b in data):  # Check if target data is all zeros
-            return None
+        # if all(b == 0 for b in data):  # Check if target data is all zeros
+        #     return None
             
         # Extract values (little endian)
         x_raw = int.from_bytes(data[0:2], byteorder='little')
@@ -84,7 +84,7 @@ class RD03Protocol:
     def get_scan(self):
         #print("in get_scan")
         with self.lock:
-            print(self.latest_data)
+            #print(self.latest_data)
             if not self.latest_data: 
                 return None 
             else:
