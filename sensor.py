@@ -39,3 +39,8 @@ class Sensor:
             self.serial = None
 
     
+    def get_scan(self):
+        with self.lock:
+            return self.latest_data.copy() if self.latest_data else None # make copy to ensure thread safety
+
+    

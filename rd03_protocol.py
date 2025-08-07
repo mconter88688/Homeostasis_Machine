@@ -14,6 +14,19 @@ class RadarTarget:
     speed: float        # cm/s, positive or negative
     distance: float     # mm, pixel distance value
 
+    def copy(self):
+        targets = []
+        for target in self.latest_data:
+            #print("scan found target")
+            targets.append(RadarTarget(
+                x_coord=target.x_coord,
+                y_coord=target.y_coord,
+                speed=target.speed,
+                distance=target.distance  
+            ))
+        return targets
+
+
 class RD03Protocol(Sensor):
     HEADER = bytes([0xAA, 0xFF, 0x03, 0x00])
     FOOTER = bytes([0x55, 0xCC])
@@ -66,24 +79,6 @@ class RD03Protocol(Sensor):
             # TODO: I dont get what this does and also this should be uin16?!
             distance=float(distance)  
         )
-
-    def get_scan(self):
-        #print("in get_scan")
-        with self.lock:
-            #print(self.latest_data)
-            if not self.latest_data: 
-                return None 
-            else:
-                targets = []
-                for target in self.latest_data:
-                    #print("scan found target")
-                    targets.append(RadarTarget(
-                        x_coord=target.x_coord,
-                        y_coord=target.y_coord,
-                        speed=target.speed,
-                        distance=target.distance  
-                    ))
-                return targets
         
 
 
