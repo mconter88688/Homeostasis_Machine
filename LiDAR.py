@@ -105,7 +105,7 @@ class LD19(Sensor):
     def start(self):
         if self.serial is None or not self.serial.is_open:
             self.serial = serial.Serial(port=self.port, 
-                                        baudrate=self.baud_rate, 
+                                        baudrate=self.baudrate, 
                                         bytesize=BYTESIZE,
                                         stopbits=STOPBITS,
                                         parity=PARITY,
