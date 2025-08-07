@@ -57,8 +57,8 @@ class AllSensors:
             if lidar_scan:
                 print(lidar_scan.timestamp)
                 for i in range(len(lidar_scan.angles)):
-                    print(str(lidar_scan.angles[i]) + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
-                sleep(0.3)
+                    print(str(lidar_scan.angles[i]))# + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
+                sleep(0.05)
             else:
                 return None
         if self.rd03:
