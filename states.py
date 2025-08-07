@@ -16,56 +16,34 @@ sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class NormalDataTraining(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, radar, temporal_model):
+    def __init__(self, FSM, model_data, allsensors, temporal_model):
         self.FSM = FSM
         self.num_frames = 0
         self.model_data = model_data
-        self.camera = camera
-        self.lidar = lidar
-        self.temporal_model = temporal_model
-        self.radar = radar
+        self.allsensors = allsensors
 
     def Enter(self):
         print("Normal Feedback Data Mode")
-        self.camera.number = 0
-        self.camera.state = "NormalDataTraining"
+        self.allsensors.gemini.number = 0
+        self.allsensors.gemini.state = "NormalDataTraining"
 
     
     def Execute(self):
         # Train on only normal feedback
-        ret, frame, processed_frames = self.camera.one_capture()
-        if not ret:
-            return
-        lidar_scan = self.lidar.get_scan()
-        if lidar_scan:
-            print(lidar_scan.timestamp)
-            for i in range(len(lidar_scan.angles)):
-                print(str(lidar_scan.angles[i]) + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
-            sleep(0.3)
-        else:
-            pass
-            #print("No lidar")
-        try: 
-            targets = self.radar.get_scan()
-            if not targets:
-                print("No targets found")
-            else:
-                for target in targets:
-                    print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
-        except Exception as e:
-            print(f"[Radar Error] {e}")
-        feat = self.temporal_model.feature_extract_combine(frame)
-        self.temporal_model.feature_append(feat)
-        if self.temporal_model.is_buffer_long_enough():
-            self.model_data.append_normal_data(np.stack(self.temporal_model.buffer))
-        # Create and display the combined view
-        display = self.camera.create_display(processed_frames)
-        cv2.imshow("Normal data", display)
+        all_sensor_data = self.allsensors.capture_sensor_info()
+        if not all_sensor_data and not all_sensor_data.camera_data:
+            feat = self.temporal_model.feature_extract_combine(all_sensor_data.camera_data.frame)
+            self.temporal_model.feature_append(feat)
+            if self.temporal_model.is_buffer_long_enough():
+                self.model_data.append_normal_data(np.stack(self.temporal_model.buffer))
+            # Create and display the combined view
+            display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
+            cv2.imshow("Normal data", display)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
             self.FSM.Transition("toMenu")
-        self.camera.number+=1
+        self.allsensors.gemini.number+=1
 
 
     def Exit(self):
@@ -368,48 +346,32 @@ class DocumentModel(fsm.State):
 
 
 class RLHF(fsm.State):
-    def __init__(self, FSM, model_data, camera, lidar, radar, temporal_model):
+    def __init__(self, FSM, model_data, allsensors, temporal_model):
         self.FSM = FSM
         self.model_data = model_data
-        self.camera = camera
-        self.lidar = lidar
-        self.temporal_model = temporal_model
-        self.radar = radar
+        self.allsensors = allsensors
 
     def Enter(self):
         print("Human Feedback Mode")
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
-        self.camera.state = "RLHF"
+        self.allsensors.gemini.state = "RLHF"
 
     def Execute(self):
-        ret, frame, processed_frames = self.camera.one_capture()
-        if not ret:
-            return
-        lidar_scan = self.lidar.get_scan()
-        if lidar_scan:
-            for i in range(len(lidar_scan.angles)):
-                print(str(lidar_scan.angles[i]) + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
-            sleep(0.5)
-        try: 
-            targets = self.radar.get_scan()
-            for target in targets:
-                print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
-        except Exception as e:
-            print(f"[Radar Error] {e}")
-        
-        feat = self.temporal_model.feature_extract_combine(frame)
-        self.temporal_model.feature_append(feat) # add 1D array to end of the buffer
+        all_sensor_data = self.allsensors.capture_sensor_info()
+        if not all_sensor_data and not all_sensor_data.camera_data:
+            feat = self.temporal_model.feature_extract_combine(all_sensor_data.camera_data.frame)
+            self.temporal_model.feature_append(feat) # add 1D array to end of the buffer
 
-        
-        if self.temporal_model.is_buffer_long_enough():
-            pred = self.temporal_model.model_prediction()
-            is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
-            self.camera.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+            
+            if self.temporal_model.is_buffer_long_enough():
+                pred = self.temporal_model.model_prediction()
+                is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
+                self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
 
-            # Draw on frame
-        display = self.camera.create_display(processed_frames)
-        cv2.imshow("Feedback Data", display)
-       
+                # Draw on frame
+            display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
+            cv2.imshow("Feedback Data", display)
+        
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
@@ -427,18 +389,14 @@ class RLHF(fsm.State):
         cv2.destroyAllWindows()
 
 class End(fsm.State):
-    def __init__(self, FSM, model_data, radar, lidar, camera):
+    def __init__(self, FSM, model_data, allsensors):
         self.FSM = FSM
         self.model_data = model_data
-        self.radar = radar
-        self.lidar = lidar
-        self.camera = camera
+        self.allsensors = allsensors
 
     def Enter(self):
         print("Ending...")
-        self.camera.stop()
-        self.radar.stop()
-        self.lidar.stop()
+        self.allsensors.stop()
         cv2.destroyAllWindows()
         self.model_data.program_running = False
 

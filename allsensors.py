@@ -44,10 +44,13 @@ class AllSensors:
             self.rd03.stop()
 
     def capture_sensor_info(self):
+        camera_data = False
+        lidar_scan = False
+        targets = False
         if self.gemini:
             camera_data = self.gemini.one_capture()
-            if camera_data.ret:
-                self.gemini_data = camera_data
+            if not camera_data:
+                return None
         if self.lidar:
             lidar_scan = self.lidar.get_scan()
             if lidar_scan:
@@ -55,15 +58,20 @@ class AllSensors:
                 for i in range(len(lidar_scan.angles)):
                     print(str(lidar_scan.angles[i]) + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
                 sleep(0.3)
-                self.lidar_data = lidar_scan
+            else:
+                return None
         if self.rd03:
             try: 
                 targets = self.rd03.get_scan()
                 if not targets:
                     print("No targets found")
+                    return None
                 else:
                     for target in targets:
                         print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
-                    self.rd03_data = targets
             except Exception as e:
                 print(f"[Radar Error] {e}")
+        return AllSensorsData(lidar_data = lidar_scan, rd03_data = targets, camera_data=camera_data)
+
+
+    

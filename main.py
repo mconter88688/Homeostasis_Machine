@@ -24,6 +24,7 @@ import camera as cam
 import LiDAR as ld
 import states
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
+from allsensors import AllSensors, AllSensorsData
 
 class Data:
     def __init__(self):
@@ -86,30 +87,21 @@ if not os.path.exists(data_folder_path):
     os.makedirs(data_folder_path)
 print("Feedback folder exists!")
 
-
-camera = cam.Camera()
-camera.configure_streams()
-camera.configure_HDR()
-camera.start()
-
-ld19 = ld.LD19()
-ld19.start()
-
-radar = RD03Protocol()
-radar.start()
+allsensors = AllSensors()
+allsensors.start()
 
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, camera, ld19, radar, autoencoder)
-hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, camera, ld19, radar, autoencoder)
+hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, allsensors, autoencoder)
+hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, allsensors, autoencoder)
 hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data, model_params, autoencoder)
 hs_model.FSM.states["WipingModelAndFeedback"] = states.WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.MODEL_PATH, hs_model.FSM, model_data)
 hs_model.FSM.states["Menu"] = states.Menu(hs_model.FSM)
 hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, autoencoder)
 hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, autoencoder)
 hs_model.FSM.states["DocumentFeedback"] = states.DocumentFeedback(hs_model.FSM, model_params, model_data)
-hs_model.FSM.states["End"] = states.End(hs_model.FSM, model_data, radar, ld19, camera)
+hs_model.FSM.states["End"] = states.End(hs_model.FSM, model_data, allsensors)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")

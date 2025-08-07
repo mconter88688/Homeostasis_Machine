@@ -83,20 +83,19 @@ class Camera:
             return
         
     def one_capture(self):
-        return_vals = CameraData(False, None, None)
         if self.frames_queue.empty():
-            return return_vals
+            return None
 
         frame_set = self.frames_queue.get()
         if frame_set is None:
-            return return_vals
+            return None
 
         depth_frame = self.safe_get_depth(frame_set)
         left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME).as_video_frame()
         right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME).as_video_frame()
 
         if not all([depth_frame, left_ir_frame, right_ir_frame]):
-            return return_vals
+            return None
 
 
         ir_left = np.frombuffer(left_ir_frame.get_data(), dtype=np.uint8).reshape(
@@ -110,12 +109,12 @@ class Camera:
         
         if not all([depth_frame, left_ir_frame, right_ir_frame]):
             print("Not All frames received")
-            return return_vals
+            return None
         
         # Process with HDR merge
         merged_frame = self.hdr_filter.process(frame_set)
         if not merged_frame:
-            return return_vals
+            return None
         
         
         merged_frames = merged_frame.as_frame_set()
@@ -153,9 +152,10 @@ class Camera:
             'right_ir': ir_right_image
         }
 
-        return_vals.ret = True
-        return_vals.frame =  [color_image, merged_depth_in_mm, ir_left, ir_right]
-        return_vals.processed_frames = processed_frames
+        return_vals = CameraData(True, 
+                                 [color_image, merged_depth_in_mm, ir_left, ir_right], 
+                                 processed_frames
+                                 )
         return return_vals
 
     
