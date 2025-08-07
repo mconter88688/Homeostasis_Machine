@@ -25,7 +25,7 @@ class NormalDataTraining(fsm.State):
 
     def Enter(self):
         print("Normal Feedback Data Mode")
-        if self.allsensors:
+        if self.allsensors.gemini:
             self.allsensors.gemini.number = 0
             self.allsensors.gemini.state = "NormalDataTraining"
 
@@ -45,7 +45,7 @@ class NormalDataTraining(fsm.State):
 
         if key == ord('q'):
             self.FSM.Transition("toMenu")
-        if self.allsensors:
+        if self.allsensors.gemini:
             self.allsensors.gemini.number+=1
 
 
@@ -358,7 +358,7 @@ class RLHF(fsm.State):
     def Enter(self):
         print("Human Feedback Mode")
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
-        if self.allsensors:
+        if self.allsensors.gemini:
             self.allsensors.gemini.state = "RLHF"
 
     def Execute(self):
