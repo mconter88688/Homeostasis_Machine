@@ -31,7 +31,7 @@ class NormalDataTraining(fsm.State):
     def Execute(self):
         # Train on only normal feedback
         all_sensor_data = self.allsensors.capture_sensor_info()
-        if not all_sensor_data and not all_sensor_data.camera_data:
+        if all_sensor_data and all_sensor_data.camera_data:
             feat = self.temporal_model.feature_extract_combine(all_sensor_data.camera_data.frame)
             self.temporal_model.feature_append(feat)
             if self.temporal_model.is_buffer_long_enough():
@@ -358,7 +358,7 @@ class RLHF(fsm.State):
 
     def Execute(self):
         all_sensor_data = self.allsensors.capture_sensor_info()
-        if not all_sensor_data and not all_sensor_data.camera_data:
+        if all_sensor_data and all_sensor_data.camera_data:
             feat = self.temporal_model.feature_extract_combine(all_sensor_data.camera_data.frame)
             self.temporal_model.feature_append(feat) # add 1D array to end of the buffer
 
