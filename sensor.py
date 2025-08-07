@@ -30,4 +30,12 @@ class Sensor:
             self.thread.start()
             print(self.name + " thread started!")
 
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join()
+        if self.serial and self.serial.is_open:
+            self.serial.close()
+            self.serial = None
+
     

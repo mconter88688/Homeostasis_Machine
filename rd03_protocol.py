@@ -144,12 +144,3 @@ class RD03Protocol(Sensor):
             # else:
             #     print("failing to be in waiting")
 
-    def stop(self):
-        """Close the serial port"""
-        self.running = False
-        if self.thread:
-            self.thread.join()
-        if self.serial and self.serial.is_open:
-            self.serial.close()
-            self.serial = None
-
