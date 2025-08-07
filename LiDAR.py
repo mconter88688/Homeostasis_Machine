@@ -17,7 +17,7 @@ POINTS = 12
 PACKET_LENGTH = 47
 
 class LidarData:
-    def __init__(self, timestamp, speed):
+    def __init__(self, timestamp = None, speed = None):
         self.angles = []
         self.distances = []
         self.intensities = []
@@ -90,6 +90,8 @@ def cal_CRC8(packet):
 class LD19(Sensor):
     def __init__(self):
         super().__init__(name = "LiDAR", baudrate=230400, port=cons.LIDAR_PORT)
+        self.temp_data = LidarData
+        self.holding_next_cycle_data = None
 
 
     def start(self):
@@ -136,11 +138,13 @@ class LD19(Sensor):
             angle_increment = angle_diff / (POINTS - 1.0) # angle increment between 8 points
 
             return_lidar_data = LidarData(timestamp, speed)
+            last_angle = start_angle
             for i in range(POINTS):
                 offset = 6 + i * 3
                 distance = struct.unpack('<H', packet[offset:offset+2])[0]
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
+                #if abs(angle - last_angle) > 300:
                 return_lidar_data.append_all_lists(angle, distance, intensity)
             
             with self.lock:
