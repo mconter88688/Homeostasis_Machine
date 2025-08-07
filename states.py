@@ -41,6 +41,8 @@ class NormalDataTraining(fsm.State):
             # Create and display the combined view
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
             cv2.imshow("Normal data", display)
+        else:
+            cv2.imshow("Control Window", np.zeros((200, 400, 3), dtype=np.uint8))
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
@@ -376,7 +378,8 @@ class RLHF(fsm.State):
                 # Draw on frame
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
             cv2.imshow("Feedback Data", display)
-        
+        else:
+            cv2.imshow("Control Window", np.zeros((200, 400, 3), dtype=np.uint8))
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
