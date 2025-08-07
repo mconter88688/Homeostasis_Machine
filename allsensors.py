@@ -9,9 +9,10 @@ from time import sleep
 
 @dataclass
 class AllSensorsData:
+    camera_data: cam.CameraData
     lidar_data: Optional[ld.LidarData] = None
     rd03_data: Optional[List[rd.RadarTarget]] = None
-    camera_data: cam.CameraData
+    
 
     
 
