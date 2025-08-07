@@ -21,6 +21,7 @@ class NormalDataTraining(fsm.State):
         self.num_frames = 0
         self.model_data = model_data
         self.allsensors = allsensors
+        self.temporal_model = temporal_model
 
     def Enter(self):
         print("Normal Feedback Data Mode")
@@ -350,6 +351,7 @@ class RLHF(fsm.State):
         self.FSM = FSM
         self.model_data = model_data
         self.allsensors = allsensors
+        self.temporal_model = temporal_model
 
     def Enter(self):
         print("Human Feedback Mode")
