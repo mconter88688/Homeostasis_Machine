@@ -29,7 +29,7 @@ class RD03Protocol(Sensor):
 
     def __init__(self):
         """Initialize the RD03D Protocol handler with serial port settings"""
-        super.__init__(baudrate=256000, port=cons.RD03D_PORT)
+        super().__init__(baudrate=256000, port=cons.RD03D_PORT)
         # self.serial = None
         # self.baudrate = 256000
         # self.port = 
