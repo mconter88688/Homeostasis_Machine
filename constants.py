@@ -1,3 +1,5 @@
+import numpy as np
+
 FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
 MODEL_PATH = "homeostasis_model.h5"
@@ -17,3 +19,4 @@ STREAM_PATH = "latest.jpg"
 RD03D_PORT = "/dev/rd03"
 LIDAR_PORT = "/dev/lidar"
 TIMEOUT = 1
+BLANK_SCREEN = np.zeros((200, 400, 3), dtype=np.uint8)
