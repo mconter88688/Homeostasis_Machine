@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 import constants as cons
 import threading
+from sensor import Sensor
 
 
 @dataclass
@@ -13,7 +14,7 @@ class RadarTarget:
     speed: float        # cm/s, positive or negative
     distance: float     # mm, pixel distance value
 
-class RD03Protocol:
+class RD03Protocol(Sensor):
     HEADER = bytes([0xAA, 0xFF, 0x03, 0x00])
     FOOTER = bytes([0x55, 0xCC])
     TARGET_DATA_SIZE = 8
@@ -28,15 +29,14 @@ class RD03Protocol:
 
     def __init__(self):
         """Initialize the RD03D Protocol handler with serial port settings"""
-        self.serial = None
-        self._state = self.WAITING_HEADER
-        self._buffer = bytearray()
-        self.baudrate = 256000
-        self.port = cons.RD03D_PORT
-        self.thread = None
-        self.running = False
-        self.lock = threading.Lock() # avoid race conditions in reading
-        self.latest_data = None
+        super.__init__(baudrate=256000, port=cons.RD03D_PORT)
+        # self.serial = None
+        # self.baudrate = 256000
+        # self.port = 
+        # self.thread = None
+        # self.running = False
+        # self.lock = threading.Lock() # avoid race conditions in reading
+        # self.latest_data = None
    
     def start(self):
         if self.serial is None or not self.serial.is_open:

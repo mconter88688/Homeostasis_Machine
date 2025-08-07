@@ -3,6 +3,7 @@ import threading
 import struct
 import numpy as np
 import constants as cons
+from sensor import Sensor
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -89,15 +90,16 @@ def cal_CRC8(packet):
     
 
 
-class LD19:
+class LD19(Sensor):
     def __init__(self):
-        self.baud_rate = 230400
-        self.port = cons.LIDAR_PORT
-        self.serial = None
-        self.thread = None
-        self.running = False
-        self.lock = threading.Lock() # avoid race conditions in reading
-        self.latest_data = None
+        super().__init__(baudrate=230400, port=cons.LIDAR_PORT)
+        # self.baud_rate = 230400
+        # self.port = cons.LIDAR_PORT
+        # self.serial = None
+        # self.thread = None
+        # self.running = False
+        # self.lock = threading.Lock() # avoid race conditions in reading
+        # self.latest_data = None
 
 
     def start(self):
