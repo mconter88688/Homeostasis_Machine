@@ -10,6 +10,16 @@ MAX_QUEUE_SIZE = 1
 MIN_DEPTH = 20  # 20mm
 MAX_DEPTH = 10000  # 10000mm
 
+class CameraData:
+    def __init__(self, ret, frame, processed_frames):
+        self.ret = ret
+        self.frame = frame
+        self.processed_frames = processed_frames
+
+    def return_data_in_list(self):
+        return [self.ret, self.frame, self.processed_frames]
+
+
 class Camera:
     def __init__(self):
         self.pipeline = ob.Pipeline()
@@ -73,23 +83,19 @@ class Camera:
             return
         
     def one_capture(self):
-        return_vals = [True, None, None]
         if self.frames_queue.empty():
-            return_vals[0] = False
-            return return_vals
+            return None
 
         frame_set = self.frames_queue.get()
         if frame_set is None:
-            return_vals[0] = False
-            return return_vals
+            return None
 
         depth_frame = self.safe_get_depth(frame_set)
         left_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.LEFT_IR_FRAME).as_video_frame()
         right_ir_frame = self.safe_get_ir(frame_set, ob.OBFrameType.RIGHT_IR_FRAME).as_video_frame()
 
         if not all([depth_frame, left_ir_frame, right_ir_frame]):
-                return_vals[0] = False
-                return return_vals
+            return None
 
 
         ir_left = np.frombuffer(left_ir_frame.get_data(), dtype=np.uint8).reshape(
@@ -102,15 +108,13 @@ class Camera:
         
         
         if not all([depth_frame, left_ir_frame, right_ir_frame]):
-                print("Not All frames received")
-                return_vals[0] = False
-                return return_vals
+            print("Not All frames received")
+            return None
         
         # Process with HDR merge
         merged_frame = self.hdr_filter.process(frame_set)
         if not merged_frame:
-            return_vals[0] = False
-            return return_vals
+            return None
         
         
         merged_frames = merged_frame.as_frame_set()
@@ -148,7 +152,11 @@ class Camera:
             'right_ir': ir_right_image
         }
 
-        return [True, [color_image, merged_depth_in_mm, ir_left, ir_right], processed_frames]
+        return_vals = CameraData(True, 
+                                 [color_image, merged_depth_in_mm, ir_left, ir_right], 
+                                 processed_frames
+                                 )
+        return return_vals
 
     
     def process_color(self, frame):

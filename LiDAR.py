@@ -1,8 +1,9 @@
 import serial
 import threading
 import struct
-from time import sleep
 import numpy as np
+import constants as cons
+from sensor import Sensor
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -11,12 +12,9 @@ import numpy as np
 #Parity: None
 #Flow Control: None
 
-TIMEOUT = 1
+
 POINTS = 12
 PACKET_LENGTH = 47
-BYTESIZE = serial.EIGHTBITS
-STOPBITS = serial.STOPBITS_ONE
-PARITY = serial.PARITY_NONE
 
 class LidarData:
     def __init__(self, timestamp, speed):
@@ -89,45 +87,19 @@ def cal_CRC8(packet):
     
 
 
-class LD19:
+class LD19(Sensor):
     def __init__(self):
-        self.baud_rate = 230400
-        self.port = "/dev/lidar"
-        self.serial = None
-        self.thread = None
-        self.running = False
-        self.lock = threading.Lock() # avoid race conditions in reading
-        self.latest_data = None
+        super().__init__(name = "LiDAR", baudrate=230400, port=cons.LIDAR_PORT)
 
 
     def start(self):
-        if self.serial is None or not self.serial.is_open:
-            self.serial = serial.Serial(port=self.port, 
-                                        baudrate=self.baud_rate, 
-                                        bytesize=BYTESIZE,
-                                        stopbits=STOPBITS,
-                                        parity=PARITY,
-                                        xonxoff=False,
-                                        rtscts=False,
-                                        timeout=TIMEOUT) #wait 1 sec for data
-            print("serial opened!")
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self._reader_thread, daemon=True)
-            self.thread.start()
-    
-    def stop(self):
-        self.running = False
-        if self.thread:
-            self.thread.join()
-        if self.serial and self.serial.is_open:
-            self.serial.close()
-            self.serial = None
-    
-    
-    def get_scan(self):
-        with self.lock:
-            return self.latest_data.copy() if self.latest_data else None # make copy to ensure thread safety
+        super().start(bytesize = serial.EIGHTBITS, 
+                      parity = serial.PARITY_NONE, 
+                      stopbits = serial.STOPBITS_ONE, 
+                      xonxoff = False, 
+                      rtscts = False, 
+                      timeout = cons.TIMEOUT
+                      )
         
     def _reader_thread(self):
         first_byte = None
@@ -173,9 +145,6 @@ class LD19:
             
             with self.lock:
                 self.latest_data = return_lidar_data
-                # print("Updated:", self.latest_data)
-                # sleep(0.5)
-                #print("lidar updated")
 
 
         
