@@ -15,9 +15,6 @@ from sensor import Sensor
 
 POINTS = 12
 PACKET_LENGTH = 47
-BYTESIZE = serial.EIGHTBITS
-STOPBITS = serial.STOPBITS_ONE
-PARITY = serial.PARITY_NONE
 
 class LidarData:
     def __init__(self, timestamp, speed):
@@ -92,31 +89,31 @@ def cal_CRC8(packet):
 
 class LD19(Sensor):
     def __init__(self):
-        super().__init__(baudrate=230400, port=cons.LIDAR_PORT)
-        # self.baud_rate = 230400
-        # self.port = cons.LIDAR_PORT
-        # self.serial = None
-        # self.thread = None
-        # self.running = False
-        # self.lock = threading.Lock() # avoid race conditions in reading
-        # self.latest_data = None
+        super().__init__(name = "LiDAR", baudrate=230400, port=cons.LIDAR_PORT)
 
 
     def start(self):
-        if self.serial is None or not self.serial.is_open:
-            self.serial = serial.Serial(port=self.port, 
-                                        baudrate=self.baudrate, 
-                                        bytesize=BYTESIZE,
-                                        stopbits=STOPBITS,
-                                        parity=PARITY,
-                                        xonxoff=False,
-                                        rtscts=False,
-                                        timeout=cons.TIMEOUT) #wait 1 sec for data
-            print("serial opened!")
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self._reader_thread, daemon=True)
-            self.thread.start()
+        super().start(bytesize = serial.EIGHTBITS, 
+                      parity = serial.PARITY_NONE, 
+                      stopbits = serial.STOPBITS_ONE, 
+                      xonxoff = False, 
+                      rtscts = False, 
+                      timeout = cons.TIMEOUT
+                      )
+        # if self.serial is None or not self.serial.is_open:
+        #     self.serial = serial.Serial(port=self.port, 
+        #                                 baudrate=self.baudrate, 
+        #                                 bytesize=BYTESIZE,
+        #                                 stopbits=STOPBITS,
+        #                                 parity=PARITY,
+        #                                 xonxoff=False,
+        #                                 rtscts=False,
+        #                                 timeout=cons.TIMEOUT) #wait 1 sec for data
+        #     print("serial opened!")
+        # if not self.running:
+        #     self.running = True
+        #     self.thread = threading.Thread(target=self._reader_thread, daemon=True)
+        #     self.thread.start()
     
     def stop(self):
         self.running = False

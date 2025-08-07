@@ -29,30 +29,16 @@ class RD03Protocol(Sensor):
 
     def __init__(self):
         """Initialize the RD03D Protocol handler with serial port settings"""
-        super().__init__(baudrate=256000, port=cons.RD03D_PORT)
-        # self.serial = None
-        # self.baudrate = 256000
-        # self.port = 
-        # self.thread = None
-        # self.running = False
-        # self.lock = threading.Lock() # avoid race conditions in reading
-        # self.latest_data = None
+        super().__init__(name = "RD03", baudrate=256000, port=cons.RD03D_PORT)
+
    
     def start(self):
-        if self.serial is None or not self.serial.is_open:
-            self.serial = serial.Serial(
-                port=self.port,
-                baudrate=self.baudrate,
-                bytesize=serial.EIGHTBITS,
-                parity=serial.PARITY_NONE,
-                stopbits=serial.STOPBITS_ONE,
-                timeout=cons.TIMEOUT) #wait 1 sec for data
-            print("rd03 serial opened!")
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self.read_frame, daemon=True)
-            self.thread.start()
-            print("rd03 thread started!")
+        super().start(bytesize = serial.EIGHTBITS, 
+                      parity = serial.PARITY_NONE, 
+                      stopbits = serial.STOPBITS_ONE, 
+                      timeout = cons.TIMEOUT
+                      )
+        
     
     def _decode_raw(self, value: int) -> float:
         """Decode a coordinate value according to the protocol specification"""
@@ -101,7 +87,7 @@ class RD03Protocol(Sensor):
         
 
 
-    def read_frame(self):
+    def _reader_thread(self):
         """Read and parse a complete data frame from the radar"""
         print("read_frame running")
         frame_data = bytearray()
