@@ -164,6 +164,9 @@ class LD19(Sensor):
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
                 if abs(angle - last_angle) > 350:
+                    print("Last angle: " + str(last_angle))
+                    print("Cur angle: " + str(angle))
+                    print("diff: " + str(abs(angle-last_angle)))
                     self.send_scan_calc_speed_and_clear(return_lidar_data)
                 return_lidar_data.append_all_lists(angle, distance, intensity, speed)
                 last_angle = angle
