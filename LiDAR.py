@@ -4,6 +4,8 @@ import struct
 import numpy as np
 import constants as cons
 from sensor import Sensor
+from time import monotonic_ns
+import math
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -15,16 +17,15 @@ from sensor import Sensor
 
 POINTS = 12
 PACKET_LENGTH = 47
-WRAP_THRESHOLD = 45
 
 class LidarData:
-    def __init__(self, start_timestamp = 0, speed = None):
+    def __init__(self, speed = None):
         self.angles = []
         self.distances = []
         self.intensities = []
         self.speed = None
         self.speed_samples = []
-        self.start_timestamp = start_timestamp
+        self.start_timestamp = None
         self.end_timestamp = None
         self.mid_timestamp = None
 
@@ -39,30 +40,37 @@ class LidarData:
         self.angles.clear()
         self.distances.clear()
         self.intensities.clear()
-        self.speed_samples = []
+        self.speed_samples.clear()
         self.speed = None
+        self.end_timestamp = None
         self.start_timestamp = None
-        self.end_timestamp = self.start_timestamp
+        self.mid_timestamp = None
 
 
     def copy(self):
-        new_obj = LidarData(self.start_timestamp, self.speed)
+        new_obj = LidarData(self.speed)
         new_obj.angles = self.angles.copy()
         new_obj.distances = self.distances.copy()
         new_obj.intensities = self.intensities.copy()
         new_obj.speed_samples = self.speed_samples.copy()
         new_obj.end_timestamp = self.end_timestamp
         new_obj.mid_timestamp = self.mid_timestamp
+        new_obj.start_timestamp = self.start_timestamp
         return new_obj
     
     def calc_mid_timestamp(self):
-        self.mid_timestamp = self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
+        if self.start_timestamp is None:
+            self.mid_timestamp = None #only if no data
+        elif self.end_timestamp is None:
+            self.mid_timestamp = self.start_timestamp
+        else:
+            self.mid_timestamp = self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
 
     def calc_speed(self):
-        self.speed = np.mean(self.speed_samples)
-
-
-
+        if self.speed_samples:
+            self.speed = float(np.mean(self.speed_samples))
+        else:
+            self.speed = None
 
 
 
@@ -143,6 +151,9 @@ class LD19(Sensor):
     def _reader_thread(self):
         first_byte = None
         return_lidar_data = LidarData()
+        prev_angle = None
+        prev_unwrapped = None
+        cur_rotation_index = None
         while self.running:
             if not first_byte:
                 first_byte = self.serial.read(1)
@@ -175,21 +186,37 @@ class LD19(Sensor):
             angle_diff = (end_angle - start_angle + 360.0) % 360.0
             angle_increment = angle_diff / (POINTS - 1.0) # angle increment between 8 points
 
-            last_angle = start_angle
             for i in range(POINTS):
                 offset = 6 + i * 3
                 distance = struct.unpack('<H', packet[offset:offset+2])[0]
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
-                if angle < last_angle - WRAP_THRESHOLD: # or len(return_lidar_data.angles) > 504:
-                    # print("Last angle: " + str(last_angle))
-                    # print("Cur angle: " + str(angle))
-                    # print("diff: " + str(abs(angle-last_angle)))
-                    return_lidar_data.end_timestamp = timestamp
-                    self.send_scan_calc_speed_and_clear(return_lidar_data)
-                    return_lidar_data.start_timestamp = timestamp
+                
+                if prev_angle is None:
+                    unwrapped = angle
+                    cur_rotation_index = math.floor(unwrapped / 360.0)
+                else:
+                    delta = angle - prev_angle
+                    if delta < -180:
+                        delta+=360.0
+                    elif delta > 180:
+                        delta-=360.0
+                    unwrapped = prev_unwrapped + delta
+
+                rotation_idx = math.floor(unwrapped/360.0)
+
+                if rotation_idx != cur_rotation_index:
+                    return_lidar_data.end_timestamp = monotonic_ns()
+                    if return_lidar_data.angles:
+                        self.send_scan_calc_speed_and_clear(return_lidar_data)
+                    return_lidar_data.start_timestamp = monotonic_ns()
+                    cur_rotation_index = rotation_idx
+                
                 return_lidar_data.append_all_lists(angle, distance, intensity, speed)
-                last_angle = angle
+
+                prev_angle = angle
+                prev_unwrapped = unwrapped
+
             
             
 
