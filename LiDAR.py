@@ -18,15 +18,14 @@ from collections import deque
 
 POINTS = 12
 PACKET_LENGTH = 47
-POINTS_MAXLEN = 505
 
 class LidarData:
     def __init__(self, speed = None):
-        self.angles = deque(maxlen=POINTS_MAXLEN)
-        self.distances = deque(maxlen=POINTS_MAXLEN)
-        self.intensities = deque(maxlen=POINTS_MAXLEN)
+        self.angles = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
+        self.distances = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
+        self.intensities = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
         self.speed = None
-        self.speed_samples = deque(maxlen=POINTS_MAXLEN)
+        self.speed_samples = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
         self.start_timestamp = None
         self.end_timestamp = None
         self.mid_timestamp = None
@@ -77,11 +76,11 @@ class LidarData:
 
     def resize_to_max_num_points(self):
         length_points = len(self.angles)
-        if length_points < 503:
+        if length_points < (cons.LIDAR_MAX_POINTS_NUM - 2):
             return False
-        if length_points < 504:
+        if length_points < (cons.LIDAR_MAX_POINTS_NUM - 1):
             self.appendleft_all_lists(0, self.distances[0], self.intensities[0], self.speed_samples[0])
-        if length_points < 505:
+        if length_points < cons.LIDAR_MAX_POINTS_NUM:
             self.append_all_lists(360, self.distances[-1], self.intensities[-1], self.speed_samples[-1])
         return True
 
