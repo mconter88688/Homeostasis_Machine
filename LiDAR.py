@@ -6,6 +6,7 @@ import constants as cons
 from sensor import Sensor
 from time import monotonic_ns
 import math
+from collections import deque
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -17,14 +18,15 @@ import math
 
 POINTS = 12
 PACKET_LENGTH = 47
+POINTS_MAXLEN = 505
 
 class LidarData:
     def __init__(self, speed = None):
-        self.angles = []
-        self.distances = []
-        self.intensities = []
+        self.angles = deque(maxlen=POINTS_MAXLEN)
+        self.distances = deque(maxlen=POINTS_MAXLEN)
+        self.intensities = deque(maxlen=POINTS_MAXLEN)
         self.speed = None
-        self.speed_samples = []
+        self.speed_samples = deque(maxlen=POINTS_MAXLEN)
         self.start_timestamp = None
         self.end_timestamp = None
         self.mid_timestamp = None
@@ -35,6 +37,13 @@ class LidarData:
         self.distances.append(distance)
         self.intensities.append(intensity)
         self.speed_samples.append(speed)
+
+    def appendleft_all_lists(self, angle, distance, intensity, speed):
+        self.angles.appendleft(angle)
+        self.distances.appendleft(distance)
+        self.intensities.appendleft(intensity)
+        self.speed_samples.appendleft(speed)
+
 
     def clear_all(self):
         self.angles.clear()
@@ -49,10 +58,10 @@ class LidarData:
 
     def copy(self):
         new_obj = LidarData(self.speed)
-        new_obj.angles = self.angles.copy()
-        new_obj.distances = self.distances.copy()
-        new_obj.intensities = self.intensities.copy()
-        new_obj.speed_samples = self.speed_samples.copy()
+        new_obj.angles = deque(self.angles)
+        new_obj.distances = deque(self.distances)
+        new_obj.intensities = deque(self.intensities)
+        new_obj.speed_samples = deque(self.speed_samples)
         new_obj.end_timestamp = self.end_timestamp
         new_obj.mid_timestamp = self.mid_timestamp
         new_obj.start_timestamp = self.start_timestamp
@@ -66,6 +75,17 @@ class LidarData:
         else:
             self.mid_timestamp = self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
 
+    def resize_to_max_num_points(self):
+        length_points = len(self.angles)
+        if length_points < 503:
+            return False
+        if length_points < 504:
+            self.appendleft_all_lists(0, self.angles[0], self.distances[0], self.intensities[0], self.speed_samples[0])
+        if length_points < 505:
+            self.append_all_lists(360, self.angles[-1], self.distances[-1], self.intensities[-1], self.speed_samples[-1])
+        return True
+
+    
     def calc_speed(self):
         if self.speed_samples:
             self.speed = float(np.mean(self.speed_samples))
@@ -138,6 +158,7 @@ class LD19(Sensor):
     def send_scan_calc_speed_and_clear(self, return_lidar_data):
         return_lidar_data.calc_mid_timestamp()
         return_lidar_data.calc_speed()
+        return_lidar_data.resize_to_max_num_points()
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
