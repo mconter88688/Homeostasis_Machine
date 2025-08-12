@@ -61,10 +61,12 @@ class AllSensors:
                 # print(lidar_scan.angles[-1])
                 # for i in range(len(lidar_scan.angles)):
                 #     print(str(lidar_scan.angles[i])) # + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
-                if not lidar_scan.mid_timestamp in self.lidar.timestamp_data:
+                if not lidar_scan.mid_timestamp in self.lidar.timestamp_data and len(lidar_scan.angles) > 506:
                     print("Num points: " + str(len(lidar_scan.angles)))
                     print("Timestamp: " + str(lidar_scan.mid_timestamp))
                     self.lidar.timestamp_data.append(lidar_scan.mid_timestamp)
+                    for i in range(len(lidar_scan.angles)):
+                        print(str(lidar_scan.angles[i]))
                     print("****************")
             else:
                 return None
