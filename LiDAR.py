@@ -166,6 +166,7 @@ class LD19(Sensor):
                 if abs(angle - last_angle) > 300:
                     self.send_scan_calc_speed_and_clear(return_lidar_data)
                 return_lidar_data.append_all_lists(angle, distance, intensity, speed)
+                last_angle = angle
             
             
 
