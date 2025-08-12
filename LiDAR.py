@@ -34,7 +34,7 @@ class LidarData:
         self.angles.clear()
         self.distances.clear()
         self.intensities.clear()
-        self.speed = None
+        self.speed.clear()
         self.timestamp = None
 
 
