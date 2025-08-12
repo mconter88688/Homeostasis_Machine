@@ -162,8 +162,9 @@ class LD19(Sensor):
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
-        with self.lock:
-             self.latest_data = return_lidar_data.copy()
+        if return_lidar_data:
+            with self.lock:
+                self.latest_data = return_lidar_data.copy()
         return_lidar_data.clear_all()
         
         
