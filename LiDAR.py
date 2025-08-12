@@ -180,7 +180,7 @@ class LD19(Sensor):
                 distance = struct.unpack('<H', packet[offset:offset+2])[0]
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
-                if abs(angle - last_angle) > 350:
+                if abs(angle - last_angle) > 350 or len(return_lidar_data.angles) > 504:
                     # print("Last angle: " + str(last_angle))
                     # print("Cur angle: " + str(angle))
                     # print("diff: " + str(abs(angle-last_angle)))
