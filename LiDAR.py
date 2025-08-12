@@ -17,13 +17,16 @@ POINTS = 12
 PACKET_LENGTH = 47
 
 class LidarData:
-    def __init__(self, timestamp = None, speed = None):
+    def __init__(self, start_timestamp = 0, speed = None):
         self.angles = []
         self.distances = []
         self.intensities = []
         self.speed = None
         self.speed_samples = []
-        self.timestamp = timestamp
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = None
+        self.mid_timestamp = None
+
 
     def append_all_lists(self, angle, distance, intensity, speed):
         self.angles.append(angle)
@@ -37,7 +40,8 @@ class LidarData:
         self.intensities.clear()
         self.speed_samples = []
         self.speed = None
-        self.timestamp = None
+        self.start_timestamp = None
+        self.end_timestamp = self.start_timestamp
 
 
     def copy(self):
@@ -46,7 +50,16 @@ class LidarData:
         new_obj.distances = self.distances.copy()
         new_obj.intensities = self.intensities.copy()
         new_obj.speed_samples = self.speed_samples.copy()
+        new_obj.start_timestamp = self.start_timestamp
+        new_obj.end_timestamp = self.end_timestamp
+        new_obj.mid_timestamp = self.mid_timestamp
         return new_obj
+    
+    def calc_mid_timestamp(self):
+        self.mid_timestamp = self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
+
+    def calc_speed(self):
+        self.speed = np.mean(self.speed_samples)
 
 
 
@@ -116,6 +129,7 @@ class LD19(Sensor):
     
     def send_scan_calc_speed_and_clear(self, return_lidar_data):
         return_lidar_data.speed = np.mean(return_lidar_data.speed_samples)
+        return_lidar_data.mid_timestamp = reutnr
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
@@ -161,7 +175,6 @@ class LD19(Sensor):
             angle_diff = (end_angle - start_angle + 360.0) % 360.0
             angle_increment = angle_diff / (POINTS - 1.0) # angle increment between 8 points
 
-            return_lidar_data.timestamp = timestamp
             last_angle = start_angle
             for i in range(POINTS):
                 offset = 6 + i * 3
@@ -172,7 +185,9 @@ class LD19(Sensor):
                     # print("Last angle: " + str(last_angle))
                     # print("Cur angle: " + str(angle))
                     # print("diff: " + str(abs(angle-last_angle)))
+                    return_lidar_data.end_timestamp = timestamp
                     self.send_scan_calc_speed_and_clear(return_lidar_data)
+                    return_lidar_data.start_timestamp = timestamp
                 return_lidar_data.append_all_lists(angle, distance, intensity, speed)
                 last_angle = angle
             
