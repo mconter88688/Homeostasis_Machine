@@ -80,9 +80,9 @@ class LidarData:
         if length_points < 503:
             return False
         if length_points < 504:
-            self.appendleft_all_lists(0, self.angles[0], self.distances[0], self.intensities[0], self.speed_samples[0])
+            self.appendleft_all_lists(0, self.distances[0], self.intensities[0], self.speed_samples[0])
         if length_points < 505:
-            self.append_all_lists(360, self.angles[-1], self.distances[-1], self.intensities[-1], self.speed_samples[-1])
+            self.append_all_lists(360, self.distances[-1], self.intensities[-1], self.speed_samples[-1])
         return True
 
     
