@@ -21,13 +21,22 @@ class LidarData:
         self.angles = []
         self.distances = []
         self.intensities = []
-        self.speed = speed
+        self.speed = []
         self.timestamp = timestamp
 
-    def append_all_lists(self, angle, distance, intensity):
+    def append_all_lists(self, angle, distance, intensity, speed):
         self.angles.append(angle)
         self.distances.append(distance)
         self.intensities.append(intensity)
+        self.speed.append(speed)
+
+    def clear_all(self):
+        self.angles.clear()
+        self.distances.clear()
+        self.intensities.clear()
+        self.speed = None
+        self.timestamp = None
+
 
     def copy(self):
         new_obj = LidarData(self.timestamp, self.speed)
@@ -91,7 +100,6 @@ class LD19(Sensor):
     def __init__(self):
         super().__init__(name = "LiDAR", baudrate=230400, port=cons.LIDAR_PORT)
         self.temp_data = LidarData
-        self.holding_next_cycle_data = None
 
 
     def start(self):
@@ -103,8 +111,19 @@ class LD19(Sensor):
                       timeout = cons.TIMEOUT
                       )
         
+    
+    def send_scan_calc_speed_and_clear(self, return_lidar_data):
+        return_lidar_data.speed = np.mean(return_lidar_data.speed)
+        with self.lock:
+             self.latest_data = return_lidar_data
+        return_lidar_data.clear_all()
+        
+        
+
+    
     def _reader_thread(self):
         first_byte = None
+        return_lidar_data = LidarData()
         while self.running:
             if not first_byte:
                 first_byte = self.serial.read(1)
@@ -137,18 +156,18 @@ class LD19(Sensor):
             angle_diff = (end_angle - start_angle + 360.0) % 360.0
             angle_increment = angle_diff / (POINTS - 1.0) # angle increment between 8 points
 
-            return_lidar_data = LidarData(timestamp, speed)
+            return_lidar_data.timestamp = timestamp
             last_angle = start_angle
             for i in range(POINTS):
                 offset = 6 + i * 3
                 distance = struct.unpack('<H', packet[offset:offset+2])[0]
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
-                #if abs(angle - last_angle) > 300:
-                return_lidar_data.append_all_lists(angle, distance, intensity)
+                if abs(angle - last_angle) > 300:
+                    self.send_scan_calc_time_and_clear(return_lidar_data)
+                return_lidar_data.append_all_lists(angle, distance, intensity, speed)
             
-            with self.lock:
-                self.latest_data = return_lidar_data
+            
 
 
         
