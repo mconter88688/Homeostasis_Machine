@@ -177,7 +177,7 @@ class LD19(Sensor):
             speed = struct.unpack('<H', packet[2:4])[0] / 360.0  # rotations per second
             start_angle = struct.unpack('<H', packet[4:6])[0] / 100.0 # LiDAR's units are degrees * 100
             end_angle = struct.unpack('<H', packet[PACKET_LENGTH-5:PACKET_LENGTH-3])[0] / 100.0
-            timestamp = struct.unpack('<H', packet[PACKET_LENGTH-3: PACKET_LENGTH-1])[0]
+            #timestamp = struct.unpack('<H', packet[PACKET_LENGTH-3: PACKET_LENGTH-1])[0]
             crc_check = packet[PACKET_LENGTH-1]
             if cal_CRC8(packet[0:PACKET_LENGTH-1]) != crc_check:
                 print("Incorrect checksum")
