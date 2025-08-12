@@ -11,6 +11,7 @@ class Sensor:
         self.running = False
         self.lock = threading.Lock() # avoid race conditions in reading
         self.latest_data = None
+        self.timestamp_data = []
 
     def start(self, bytesize, parity, stopbits, xonxoff = False, rtscts = False, timeout = 1):
         if self.serial is None or not self.serial.is_open:
