@@ -21,20 +21,22 @@ class LidarData:
         self.angles = []
         self.distances = []
         self.intensities = []
-        self.speed = []
+        self.speed = None
+        self.speed_samples = []
         self.timestamp = timestamp
 
     def append_all_lists(self, angle, distance, intensity, speed):
         self.angles.append(angle)
         self.distances.append(distance)
         self.intensities.append(intensity)
-        self.speed.append(speed)
+        self.speed_samples.append(speed)
 
     def clear_all(self):
         self.angles.clear()
         self.distances.clear()
         self.intensities.clear()
-        self.speed = []
+        self.speed_samples = []
+        self.speed = None
         self.timestamp = None
 
 
@@ -43,6 +45,7 @@ class LidarData:
         new_obj.angles = self.angles.copy()
         new_obj.distances = self.distances.copy()
         new_obj.intensities = self.intensities.copy()
+        new_obj.speed_samples = self.speed_samples.copy()
         return new_obj
 
 
@@ -112,7 +115,7 @@ class LD19(Sensor):
         
     
     def send_scan_calc_speed_and_clear(self, return_lidar_data):
-        return_lidar_data.speed = np.mean(return_lidar_data.speed)
+        return_lidar_data.speed = np.mean(return_lidar_data.speed_samples)
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
