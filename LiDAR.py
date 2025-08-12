@@ -45,12 +45,11 @@ class LidarData:
 
 
     def copy(self):
-        new_obj = LidarData(self.timestamp, self.speed)
+        new_obj = LidarData(self.start_timestamp, self.speed)
         new_obj.angles = self.angles.copy()
         new_obj.distances = self.distances.copy()
         new_obj.intensities = self.intensities.copy()
         new_obj.speed_samples = self.speed_samples.copy()
-        new_obj.start_timestamp = self.start_timestamp
         new_obj.end_timestamp = self.end_timestamp
         new_obj.mid_timestamp = self.mid_timestamp
         return new_obj
