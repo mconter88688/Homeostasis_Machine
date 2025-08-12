@@ -99,7 +99,6 @@ def cal_CRC8(packet):
 class LD19(Sensor):
     def __init__(self):
         super().__init__(name = "LiDAR", baudrate=230400, port=cons.LIDAR_PORT)
-        self.temp_data = LidarData
 
 
     def start(self):
