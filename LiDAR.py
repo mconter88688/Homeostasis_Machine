@@ -128,8 +128,8 @@ class LD19(Sensor):
         
     
     def send_scan_calc_speed_and_clear(self, return_lidar_data):
-        return_lidar_data.speed = np.mean(return_lidar_data.speed_samples)
-        return_lidar_data.mid_timestamp = reutnr
+        return_lidar_data.calc_mid_timestamp()
+        return_lidar_data.calc_speed()
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
