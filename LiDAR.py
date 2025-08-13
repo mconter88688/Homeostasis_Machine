@@ -91,6 +91,12 @@ class LidarData:
     def bin_lidar_data(self):
         angle_edges = np.linspace(0, 360, NUM_BINS+1)
         angle_centers = (angle_edges[:-1] + angle_edges[1:]) / 2
+        interp_distances = np.interp(angle_centers, self.angles, self.distances, period = 360)
+        interp_intensities = np.interp(angle_centers, self.angles, self.intensities, period = 360)
+        return angle_centers, interp_distances, interp_intensities
+    
+    def circular_median_filter(data):
+        pass
 
     
     def resize_to_max_num_points(self):
@@ -136,7 +142,7 @@ class LidarData:
         img = cv2.imread(graph_path)
         if img is not None:
             cv2.imshow("Graph", img)
-            cv2.waitKey(0)
+            #cv2.waitKey(0)
             #cv2.destroyAllWindows()
 
 
