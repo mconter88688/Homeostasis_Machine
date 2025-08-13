@@ -247,7 +247,7 @@ class LD19(Sensor):
             with self.lock:
                 #print(lidar_preprocessed_data)
                 self.latest_data = lidar_preprocessed_data.copy()
-                print(self.latest_data)
+                #print(self.latest_data)
         lidar_intake_data.clear_all()
         
         
