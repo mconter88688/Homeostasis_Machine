@@ -55,7 +55,7 @@ class AllSensors:
         if self.lidar:
             lidar_scan = self.lidar.get_scan()
             if lidar_scan:
-                lidar_scan.graph()
+                #lidar_scan.graph()
                 #print(lidar_scan.timestamp)
                 # print("Allsensors:")
                 # print(lidar_scan.angles[0])
