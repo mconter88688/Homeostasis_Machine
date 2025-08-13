@@ -87,7 +87,7 @@ if not os.path.exists(data_folder_path):
     os.makedirs(data_folder_path)
 print("Feedback folder exists!")
 
-allsensors = AllSensors(rd03_present = False, gemini_present = False)
+allsensors = AllSensors(lidar_present=True, rd03_present = True, gemini_present = True)
 allsensors.start()
 
 
