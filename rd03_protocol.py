@@ -2,7 +2,6 @@ import serial
 from dataclasses import dataclass
 from typing import Optional
 import constants as cons
-import threading
 from sensor import Sensor
 
 

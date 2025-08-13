@@ -1,5 +1,6 @@
 import serial
-import threading
+import os
+import cv2
 import struct
 import numpy as np
 import constants as cons
@@ -7,6 +8,9 @@ from sensor import Sensor
 from time import monotonic_ns
 import math
 from collections import deque
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -91,7 +95,34 @@ class LidarData:
         else:
             self.speed = None
 
+    def graph(self):
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex = True)
 
+        # Raw data
+        axs[0].plot(self.angles, self.distances, label="Distance", color="red")
+        axs[0].set_title("Distance Data")
+        axs[0].set_xlabel("Angle (degrees)")
+        axs[0].set_ylabel("Distance (m)")
+        axs[0].grid(True)
+        axs[0].legend()
+
+        # Filtered data
+        axs[1].plot(self.angles, self.intensities, label="Intentisites", color="blue")
+        axs[1].set_title("Intensity Data")
+        axs[1].set_xlabel("Angle (degrees)")
+        axs[1].set_ylabel("Intensity")
+        axs[1].grid(True)
+        axs[1].legend()
+
+        plt.tight_layout()
+        graph_path = os.path.join(os.getcwd(), "temp_lidar.png")
+        plt.savefig(graph_path)
+
+        img = cv2.imread(graph_path)
+        if img is not None:
+            cv2.imshow("Graph", img)
+            cv2.waitKey(0)
+            #cv2.destroyAllWindows()
 
 
 crc_table = np.array([
