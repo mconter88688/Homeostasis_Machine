@@ -29,20 +29,30 @@ MAX_MEAS_RADIUS = 12000
 MIN_MEAS_RADIUS = 20
 NUM_BINS = 500
 MEDIAN_FILTER_KERNEL_SIZE = 6
+EMA_ALPHA = 0.3
 
 def within_radius(distance):
     return (distance >= MIN_MEAS_RADIUS and distance <= MAX_MEAS_RADIUS)
+
+def ema(prev_data, new_unsmoothed_data, alpha = EMA_ALPHA):
+    if prev_data is None:
+        return new_unsmoothed_data
+    return alpha * new_unsmoothed_data + (1 - alpha) * prev_data
+
 
 class LidarData:
     def __init__(self, speed = None):
         self.angles = []
         self.distances = []
         self.intensities = []
-        self.speed = None
+        self.speed = speed
         self.speed_samples = []
         self.start_timestamp = None
         self.end_timestamp = None
         self.mid_timestamp = None
+        self.prev_distances = None
+        self.prev_intensities = None
+        
 
 
     def append_all_lists(self, angle, distance, intensity, speed):
@@ -88,9 +98,9 @@ class LidarData:
         interp_distances = np.interp(angle_centers, self.angles, self.distances, period = 360)
         interp_intensities = np.interp(angle_centers, self.angles, self.intensities, period = 360)
         return angle_centers, interp_distances, interp_intensities
-    
-    def circular_median_filter(data, kernel_size = MEDIAN_FILTER_KERNEL_SIZE, num_data_points = NUM_BINS):
-        half_kernel = MEDIAN_FILTER_KERNEL_SIZE // 2
+
+    def circular_median_filter(self, data, kernel_size = MEDIAN_FILTER_KERNEL_SIZE, num_data_points = NUM_BINS):
+        half_kernel = kernel_size // 2
 
         filtered = np.zeros_like(data)
 
@@ -99,6 +109,14 @@ class LidarData:
             filtered[i] = np.median(data[neighbor_idxs])
         return filtered
     
+    def lidar_dsp(self):
+        self.angles, self.distances, self.intensities = self.bin_lidar_data()
+        self.distances = self.circular_median_filter(self.distances)
+        self.intensities = self.circular_median_filter(self.intensities)
+        self.distances = ema(self.prev_distances, self.distances)
+        self.intensities=ema(self.prev_intensities, self.intensities)
+
+
     def calc_speed(self):
         if self.speed_samples:
             self.speed = float(np.mean(self.speed_samples))
@@ -198,6 +216,7 @@ class LD19(Sensor):
     def send_scan_calc_speed_and_clear(self, return_lidar_data):
         return_lidar_data.calc_mid_timestamp()
         return_lidar_data.calc_speed()
+        return_lidar_data.lidar_dsp()
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
