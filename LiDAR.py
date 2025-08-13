@@ -19,9 +19,19 @@ import matplotlib.pyplot as plt
 #Parity: None
 #Flow Control: None
 
+# LIDAR Specs: https://www.waveshare.com/wiki/DTOF_LIDAR_LD19
+# Sweep Rate: 10 Hz
+# Measuring Radius: 0.02 - 12 m
+
 
 POINTS = 12
 PACKET_LENGTH = 47
+MAX_MEAS_RADIUS = 12000
+MIN_MEAS_RADIUS = 20
+NUM_BINS = 500
+
+def within_radius(distance):
+    return (distance >= MIN_MEAS_RADIUS and distance <= MAX_MEAS_RADIUS)
 
 class LidarData:
     def __init__(self, speed = None):
@@ -78,6 +88,11 @@ class LidarData:
         else:
             self.mid_timestamp = self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
 
+    def bin_lidar_data(self):
+        angle_edges = np.linspace(0, 360, NUM_BINS+1)
+        angle_centers = (angle_edges[:-1] + angle_edges[1:]) / 2
+
+    
     def resize_to_max_num_points(self):
         length_points = len(self.angles)
         if length_points < (cons.LIDAR_MAX_POINTS_NUM - 2):
@@ -96,7 +111,7 @@ class LidarData:
             self.speed = None
 
     def graph(self):
-        fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex = True)
+        fig, axs = plt.subplots(2, 1, figsize=(8, 6), sharex = True)
 
         # Raw data
         axs[0].plot(self.angles, self.distances, label="Distance", color="red")
@@ -107,7 +122,7 @@ class LidarData:
         axs[0].legend()
 
         # Filtered data
-        axs[1].plot(self.angles, self.intensities, label="Intentisites", color="blue")
+        axs[1].plot(self.angles, self.intensities, label="Intensities", color="blue")
         axs[1].set_title("Intensity Data")
         axs[1].set_xlabel("Angle (degrees)")
         axs[1].set_ylabel("Intensity")
@@ -240,7 +255,9 @@ class LD19(Sensor):
 
             for i in range(POINTS):
                 offset = 6 + i * 3
-                distance = struct.unpack('<H', packet[offset:offset+2])[0]
+                distance = struct.unpack('<H', packet[offset:offset+2])[0] # unit is mm
+                if not within_radius(distance):
+                    continue
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
                 
