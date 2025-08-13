@@ -73,7 +73,7 @@ class AllSensors:
                 #             print(str(lidar_scan.angles[i]))
                     # print("****************")               
             else:
-                print("no lidar readings")
+                #print("no lidar readings")
                 return None
         if self.rd03:
             try: 
