@@ -7,7 +7,6 @@ import constants as cons
 from sensor import Sensor
 from time import monotonic_ns
 import math
-from collections import deque
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -29,17 +28,18 @@ PACKET_LENGTH = 47
 MAX_MEAS_RADIUS = 12000
 MIN_MEAS_RADIUS = 20
 NUM_BINS = 500
+MEDIAN_FILTER_KERNEL_SIZE = 6
 
 def within_radius(distance):
     return (distance >= MIN_MEAS_RADIUS and distance <= MAX_MEAS_RADIUS)
 
 class LidarData:
     def __init__(self, speed = None):
-        self.angles = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
-        self.distances = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
-        self.intensities = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
+        self.angles = []
+        self.distances = []
+        self.intensities = []
         self.speed = None
-        self.speed_samples = deque(maxlen=cons.LIDAR_MAX_POINTS_NUM)
+        self.speed_samples = []
         self.start_timestamp = None
         self.end_timestamp = None
         self.mid_timestamp = None
@@ -50,12 +50,6 @@ class LidarData:
         self.distances.append(distance)
         self.intensities.append(intensity)
         self.speed_samples.append(speed)
-
-    def appendleft_all_lists(self, angle, distance, intensity, speed):
-        self.angles.appendleft(angle)
-        self.distances.appendleft(distance)
-        self.intensities.appendleft(intensity)
-        self.speed_samples.appendleft(speed)
 
 
     def clear_all(self):
@@ -71,10 +65,10 @@ class LidarData:
 
     def copy(self):
         new_obj = LidarData(self.speed)
-        new_obj.angles = deque(self.angles)
-        new_obj.distances = deque(self.distances)
-        new_obj.intensities = deque(self.intensities)
-        new_obj.speed_samples = deque(self.speed_samples)
+        new_obj.angles = self.angles.copy()
+        new_obj.distances = self.distances.copy()
+        new_obj.intensities = self.intensities.copy()
+        new_obj.speed_samples = self.speed_samples.copy()
         new_obj.end_timestamp = self.end_timestamp
         new_obj.mid_timestamp = self.mid_timestamp
         new_obj.start_timestamp = self.start_timestamp
@@ -95,20 +89,15 @@ class LidarData:
         interp_intensities = np.interp(angle_centers, self.angles, self.intensities, period = 360)
         return angle_centers, interp_distances, interp_intensities
     
-    def circular_median_filter(data):
-        pass
+    def circular_median_filter(data, kernel_size = MEDIAN_FILTER_KERNEL_SIZE, num_data_points = NUM_BINS):
+        half_kernel = MEDIAN_FILTER_KERNEL_SIZE // 2
 
-    
-    def resize_to_max_num_points(self):
-        length_points = len(self.angles)
-        if length_points < (cons.LIDAR_MAX_POINTS_NUM - 2):
-            return False
-        if length_points < (cons.LIDAR_MAX_POINTS_NUM - 1):
-            self.appendleft_all_lists(0, self.distances[0], self.intensities[0], self.speed_samples[0])
-        if length_points < cons.LIDAR_MAX_POINTS_NUM:
-            self.append_all_lists(360, self.distances[-1], self.intensities[-1], self.speed_samples[-1])
-        return True
+        filtered = np.zeros_like(data)
 
+        for i in range(num_data_points):
+            neighbor_idxs = [(i + j) % num_data_points for j in [-half_kernel:half_kernel + 1]]
+            filtered[i] = np.median(data[neighbor_idxs])
+        return filtered
     
     def calc_speed(self):
         if self.speed_samples:
@@ -209,7 +198,6 @@ class LD19(Sensor):
     def send_scan_calc_speed_and_clear(self, return_lidar_data):
         return_lidar_data.calc_mid_timestamp()
         return_lidar_data.calc_speed()
-        return_lidar_data.resize_to_max_num_points()
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
