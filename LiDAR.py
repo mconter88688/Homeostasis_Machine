@@ -91,6 +91,7 @@ class LiDARPreprocessedData:
         new_obj.timestamp = self.timestamp
         new_obj.prev_distance = np.copy(self.prev_distance)
         new_obj.prev_intensity = np.copy(self.prev_intensity)
+        return new_obj
 
     def graph(self):
         fig, axs = plt.subplots(2, 1, figsize=(8, 6), sharex = True)
@@ -244,7 +245,7 @@ class LD19(Sensor):
         # print(return_lidar_data.angles[-1])
         if lidar_preprocessed_data:
             with self.lock:
-                print(lidar_preprocessed_data)
+                #print(lidar_preprocessed_data)
                 self.latest_data = lidar_preprocessed_data.copy()
                 print(self.latest_data)
         lidar_intake_data.clear_all()
