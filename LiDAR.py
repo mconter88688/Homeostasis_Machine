@@ -95,7 +95,7 @@ class LidarData:
         filtered = np.zeros_like(data)
 
         for i in range(num_data_points):
-            neighbor_idxs = [(i + j) % num_data_points for j in [-half_kernel:half_kernel + 1]]
+            neighbor_idxs = [(i + j) % num_data_points for j in range(-half_kernel, half_kernel + 1)]
             filtered[i] = np.median(data[neighbor_idxs])
         return filtered
     
