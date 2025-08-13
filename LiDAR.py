@@ -244,6 +244,7 @@ class LD19(Sensor):
         # print(return_lidar_data.angles[-1])
         if lidar_preprocessed_data:
             with self.lock:
+                print(lidar_preprocessed_data)
                 self.latest_data = lidar_preprocessed_data.copy()
                 print(self.latest_data)
         lidar_intake_data.clear_all()
