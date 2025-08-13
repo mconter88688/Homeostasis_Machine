@@ -3,7 +3,7 @@ import rd03_protocol as rd
 import camera as cam
 from typing import Optional, List
 from dataclasses import dataclass
-from time import sleep
+#from time import sleep
 
 
 
@@ -70,7 +70,7 @@ class AllSensors:
                 #     if len(lidar_scan.angles) > 506:
                 #         for i in range(len(lidar_scan.angles)):
                 #             print(str(lidar_scan.angles[i]))
-                    print("****************")
+                    print("****************")               
             else:
                 return None
         if self.rd03:
