@@ -34,100 +34,69 @@ EMA_ALPHA = 0.3
 def within_radius(distance):
     return (distance >= MIN_MEAS_RADIUS and distance <= MAX_MEAS_RADIUS)
 
-def ema(prev_data, new_unsmoothed_data, alpha = EMA_ALPHA):
-    if prev_data is None:
+def ema(prev_data, new_unsmoothed_data, prev_data_flag, alpha = EMA_ALPHA):
+    if not prev_data_flag:
         return new_unsmoothed_data
     return alpha * new_unsmoothed_data + (1 - alpha) * prev_data
 
 
-class LidarData:
-    def __init__(self, speed = None):
-        self.angles = []
-        self.distances = []
-        self.intensities = []
-        self.speed = speed
-        self.speed_samples = []
-        self.start_timestamp = None
-        self.end_timestamp = None
-        self.mid_timestamp = None
-        self.prev_distances = None
-        self.prev_intensities = None
-        
+class LiDARPreprocessedData:
+    def __init__(self, num_data_points = NUM_BINS):
+        self.num_data_points = num_data_points # never rewritten
+        angle_edges = np.linspace(0, 360, self.num_data_points+1)
+        self.angle_array = (angle_edges[:-1] + angle_edges[1:]) / 2 # never rewritten
+        self.distance_array = np.zeros(NUM_BINS) # rewritten in bin_lidar_data
+        self.intensity_array = np.zeros(NUM_BINS) # rewritten in bin_lidar_data
+        self.speed = None 
+        self.timestamp = None
+        self.are_there_prev_vals = False # rewritten in ema
+        self.prev_distance = np.zeros(NUM_BINS) # rewritten  in ema
+        self.prev_intensity = np.zeros(NUM_BINS) # rewritten in ema
 
-
-    def append_all_lists(self, angle, distance, intensity, speed):
-        self.angles.append(angle)
-        self.distances.append(distance)
-        self.intensities.append(intensity)
-        self.speed_samples.append(speed)
-
-
-    def clear_all(self):
-        self.angles.clear()
-        self.distances.clear()
-        self.intensities.clear()
-        self.speed_samples.clear()
-        self.speed = None
-        self.end_timestamp = None
-        self.start_timestamp = None
-        self.mid_timestamp = None
-
-
-    def copy(self):
-        new_obj = LidarData(self.speed)
-        new_obj.angles = self.angles.copy()
-        new_obj.distances = self.distances.copy()
-        new_obj.intensities = self.intensities.copy()
-        new_obj.speed_samples = self.speed_samples.copy()
-        new_obj.end_timestamp = self.end_timestamp
-        new_obj.mid_timestamp = self.mid_timestamp
-        new_obj.start_timestamp = self.start_timestamp
-        return new_obj
-    
-    def calc_mid_timestamp(self):
-        if self.start_timestamp is None:
-            self.mid_timestamp = None #only if no data
-        elif self.end_timestamp is None:
-            self.mid_timestamp = self.start_timestamp
-        else:
-            self.mid_timestamp = self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
-
-    def bin_lidar_data(self):
-        angle_edges = np.linspace(0, 360, NUM_BINS+1)
-        angle_centers = (angle_edges[:-1] + angle_edges[1:]) / 2
-        interp_distances = np.interp(angle_centers, self.angles, self.distances, period = 360)
-        interp_intensities = np.interp(angle_centers, self.angles, self.intensities, period = 360)
-        return angle_centers, interp_distances, interp_intensities
-
-    def circular_median_filter(self, data, kernel_size = MEDIAN_FILTER_KERNEL_SIZE, num_data_points = NUM_BINS):
+    def circular_median_filter(self, kernel_size = MEDIAN_FILTER_KERNEL_SIZE):
         half_kernel = kernel_size // 2
 
-        filtered = np.zeros_like(data)
+        filtered_intensity = np.zeros_like(self.intensity_array)
+        filtered_distance = np.zeros_like(self.distance_array)
 
-        for i in range(num_data_points):
-            neighbor_idxs = [(i + j) % num_data_points for j in range(-half_kernel, half_kernel + 1)]
-            filtered[i] = np.median(data[neighbor_idxs])
-        return filtered
+        for i in range(self.num_data_points):
+            neighbor_idxs = [(i + j) % self.num_data_points for j in range(-half_kernel, half_kernel + 1)]
+            filtered_intensity[i] = np.median(self.intensity_array[neighbor_idxs])
+            filtered_distance[i] = np.median(self.distance_array[neighbor_idxs])
+        self.intensity_array[:] = filtered_intensity
+        self.distance_array[:] = filtered_distance
+
+    def ema(self, alpha = EMA_ALPHA):
+        self.distance_array[:] = ema(self.prev_distance,self.distance_array, self.are_there_prev_vals, alpha)
+        self.intensity_array[:] = ema(self.prev_intensity, self.intensity_array, self.are_there_prev_vals, alpha)
+        self.are_there_prev_vals = True
+        self.prev_intensity[:] = self.intensity_array.copy()
+        self.prev_distance[:] = self.distance_array.copy()
+
+    def bin_lidar_data(self, lidar_intake_data):
+        self.distance_array[:] = np.interp(self.angle_array, lidar_intake_data.angles, lidar_intake_data.distances, period = 360)
+        self.intensity_array[:] = np.interp(self.angle_array, lidar_intake_data.angles, lidar_intake_data.intensities, period = 360)
     
-    def lidar_dsp(self):
-        self.angles, self.distances, self.intensities = self.bin_lidar_data()
-        self.distances = self.circular_median_filter(self.distances)
-        self.intensities = self.circular_median_filter(self.intensities)
-        self.distances = ema(self.prev_distances, self.distances)
-        self.intensities=ema(self.prev_intensities, self.intensities)
-
-
-    def calc_speed(self):
-        if self.speed_samples:
-            self.speed = float(np.mean(self.speed_samples))
-        else:
-            self.speed = None
+    def dsp_lidar(self, lidar_intake_data):
+        self.bin_lidar_data(lidar_intake_data)
+        self.circular_median_filter()
+        self.ema()
+    
+    def copy(self):
+        new_obj = LiDARPreprocessedData(self.num_data_points)
+        new_obj.angle_array = np.copy(self.angle_array)
+        new_obj.distance_array = np.copy(self.distance_array)
+        new_obj.intensity_array = np.copy(self.intensity_array)
+        new_obj.speed = self.speed
+        new_obj.timestamp = self.timestamp
+        new_obj.prev_distance = np.copy(self.prev_distance)
+        new_obj.prev_intensity = np.copy(self.prev_intensity)
 
     def graph(self):
         fig, axs = plt.subplots(2, 1, figsize=(8, 6), sharex = True)
 
         # Raw data
-        axs[0].plot(self.angles, self.distances, label="Distance", color="red")
+        axs[0].plot(self.angle_array, self.distance_array, label="Distance", color="red")
         axs[0].set_title("Distance Data")
         axs[0].set_xlabel("Angle (degrees)")
         axs[0].set_ylabel("Distance (m)")
@@ -135,7 +104,7 @@ class LidarData:
         axs[0].legend()
 
         # Filtered data
-        axs[1].plot(self.angles, self.intensities, label="Intensities", color="blue")
+        axs[1].plot(self.angle_array, self.intensity_array, label="Intensities", color="blue")
         axs[1].set_title("Intensity Data")
         axs[1].set_xlabel("Angle (degrees)")
         axs[1].set_ylabel("Intensity")
@@ -151,6 +120,59 @@ class LidarData:
             cv2.imshow("Graph", img)
             #cv2.waitKey(0)
             #cv2.destroyAllWindows()
+        
+    
+
+class LidarIntakeData:
+    def __init__(self):
+        self.angles = []
+        self.distances = []
+        self.intensities = []
+        self.speed_samples = []
+        self.start_timestamp = None
+        self.end_timestamp = None
+        
+
+    def append_all_lists(self, angle, distance, intensity, speed):
+        self.angles.append(angle)
+        self.distances.append(distance)
+        self.intensities.append(intensity)
+        self.speed_samples.append(speed)
+
+
+    def clear_all(self):
+        self.angles.clear()
+        self.distances.clear()
+        self.intensities.clear()
+        self.speed_samples.clear()
+        self.end_timestamp = None
+        self.start_timestamp = None
+
+
+    def copy(self):
+        new_obj = LidarIntakeData(self.speed)
+        new_obj.angles = self.angles.copy()
+        new_obj.distances = self.distances.copy()
+        new_obj.intensities = self.intensities.copy()
+        new_obj.speed_samples = self.speed_samples.copy()
+        new_obj.end_timestamp = self.end_timestamp
+        new_obj.start_timestamp = self.start_timestamp
+        return new_obj
+    
+    def calc_mid_timestamp(self):
+        if self.start_timestamp is None:
+            return None #only if no data
+        elif self.end_timestamp is None:
+            return self.start_timestamp
+        else:
+            return self.start_timestamp + (self.end_timestamp - self.start_timestamp)/2
+
+
+    def calc_speed(self):
+        if self.speed_samples:
+            return float(np.mean(self.speed_samples))
+        else:
+            return None
 
 
 crc_table = np.array([
@@ -213,24 +235,25 @@ class LD19(Sensor):
                       )
         
     
-    def send_scan_calc_speed_and_clear(self, return_lidar_data):
-        return_lidar_data.calc_mid_timestamp()
-        return_lidar_data.calc_speed()
-        return_lidar_data.lidar_dsp()
+    def send_scan_calc_speed_and_clear(self, lidar_intake_data, lidar_preprocessed_data):
+        lidar_preprocessed_data.timestamp = lidar_intake_data.calc_mid_timestamp()
+        lidar_preprocessed_data.speed = lidar_intake_data.calc_speed()
+        lidar_preprocessed_data.dsp_lidar(lidar_intake_data)
         # print("send_scan:")
         # print(return_lidar_data.angles[0])
         # print(return_lidar_data.angles[-1])
-        if return_lidar_data:
+        if lidar_preprocessed_data:
             with self.lock:
-                self.latest_data = return_lidar_data.copy()
-        return_lidar_data.clear_all()
+                self.latest_data = lidar_preprocessed_data.copy()
+        lidar_intake_data.clear_all()
         
         
 
     
     def _reader_thread(self):
         first_byte = None
-        return_lidar_data = LidarData()
+        lidar_intake_data = LidarIntakeData()
+        lidar_preprocessed_data = LiDARPreprocessedData()
         prev_angle = None
         prev_unwrapped = None
         cur_rotation_index = None
@@ -288,13 +311,13 @@ class LD19(Sensor):
                 rotation_idx = math.floor(unwrapped/360.0)
 
                 if rotation_idx != cur_rotation_index:
-                    return_lidar_data.end_timestamp = monotonic_ns()
-                    if return_lidar_data.angles:
-                        self.send_scan_calc_speed_and_clear(return_lidar_data)
-                    return_lidar_data.start_timestamp = monotonic_ns()
+                    lidar_intake_data.end_timestamp = monotonic_ns()
+                    if lidar_intake_data.angles:
+                        self.send_scan_calc_speed_and_clear(lidar_intake_data, lidar_preprocessed_data)
+                    lidar_intake_data.start_timestamp = monotonic_ns()
                     cur_rotation_index = rotation_idx
                 
-                return_lidar_data.append_all_lists(angle, distance, intensity, speed)
+                lidar_intake_data.append_all_lists(angle, distance, intensity, speed)
 
                 prev_angle = angle
                 prev_unwrapped = unwrapped

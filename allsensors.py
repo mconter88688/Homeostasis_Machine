@@ -10,7 +10,7 @@ from dataclasses import dataclass
 @dataclass
 class AllSensorsData:
     camera_data: cam.CameraData
-    lidar_data: Optional[ld.LidarData] = None
+    lidar_data: Optional[ld.LidarPreprocessedData] = None
     rd03_data: Optional[List[rd.RadarTarget]] = None
     
 
