@@ -400,10 +400,11 @@ class RLHF(fsm.State):
             self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
 
             # Draw on frame
-        display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
-        cv2.imshow("Feedback Data", display)
-        # else:
-        #     cv2.imshow("Control Window", cons.BLANK_SCREEN)
+        if all_sensor_data:
+            display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
+            cv2.imshow("Feedback Data", display)
+        else:
+            cv2.imshow("Control Window", cons.BLANK_SCREEN)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
