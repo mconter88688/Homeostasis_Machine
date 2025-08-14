@@ -31,6 +31,20 @@ class RadarPreprocessedData:
             self.distances[i] = radar_target[i].distance
 
 
+    def copy(self):
+        new_obj = RadarPreprocessedData()
+        new_obj.are_there_prev_vals = self.are_there_prev_vals
+        new_obj.timestamp = self.timestamp
+        new_obj.x_coords = self.x_coords
+        new_obj.y_coords = self.y_coords
+        new_obj.speeds = self.speeds
+        new_obj.distances = self.distances
+        new_obj.prev_x_coords = self.prev_x_coords
+        new_obj.prev_y_coords = self.prev_y_coords
+        new_obj.prev_speeds = self.prev_speeds
+        new_obj.prev_distances = self.prev_distances
+
+
     def ema(self):
         self.x_coords[:] = ema(self.prev_x_coords, self.x_coords, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
         self.y_coords[:] = ema(self.prev_y_coords, self.y_coords, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)

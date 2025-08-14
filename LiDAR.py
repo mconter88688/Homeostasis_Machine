@@ -87,6 +87,7 @@ class LiDARPreprocessedData:
         new_obj.intensity_array = np.copy(self.intensity_array)
         new_obj.speed = self.speed
         new_obj.timestamp = self.timestamp
+        new_obj.are_there_prev_vals = self.are_there_prev_vals 
         new_obj.prev_distance = np.copy(self.prev_distance)
         new_obj.prev_intensity = np.copy(self.prev_intensity)
         return new_obj
