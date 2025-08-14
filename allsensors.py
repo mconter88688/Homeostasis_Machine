@@ -85,7 +85,7 @@ class AllSensors:
                     return None
                 else:
                     for i in range(cons.RADAR_MAX_TARGETS):
-                        print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speed[i]}")
+                        print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}")
             except Exception as e:
                 print(f"[Radar Error] {e}")
         return AllSensorsData(lidar_data = lidar_scan, rd03_data = targets, camera_data=camera_data)
