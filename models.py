@@ -227,13 +227,6 @@ class HomeostasisModel:
             self.model = load_model(model_path) # function imported from tensorflow.keras.models
         else:
             self.model = model_building_func()
-        self.buffer = deque(maxlen=cons.SEQ_LEN)
-
-    def feature_append(self, feat):
-        self.buffer.append(feat)
-
-    def is_buffer_long_enough(self, buffer_len = cons.SEQ_LEN):
-        return len(self.buffer) == buffer_len
     
 
 
@@ -242,8 +235,15 @@ class HomeostasisModel:
 class LDRD03Autoencoder(HomeostasisModel):
     def __init__(self):
         super().__init__(model_path= cons.LDRD_MODEL_PATH, model_building_func=build_ldrd_autoencoder)
+        self.lidar_buffer = deque(maxlen=cons.SEQ_LEN)
+        self.radar_buffer = deque(max)
 
-    
+    def all_features_append(self, lidar_preprocessed_data, radar_preprocessed_data):
+        lidar_array = lidar_preprocessed_data.class_to_single_numpy_array()
+        radar_array = radar_preprocessed_data.class_to_single_numpy_array()
+        self.lidar_buffer.append(lidar_array)
+        self.radar_buffer.append(radar_array)
+
         
     
 
@@ -253,7 +253,14 @@ class ImageAutoencoder(HomeostasisModel):
         self.color_feature_extractor = None
         self.ir_feature_extractor = None
         self.hdr_feature_extractor = None
+        self.buffer = deque(maxlen=cons.SEQ_LEN)
         
+
+    def feature_append(self, feat):
+        self.buffer.append(feat)
+
+    def is_buffer_long_enough(self, buffer_len = cons.SEQ_LEN):
+        return len(self.buffer) == buffer_len   
 
     def feature_extractor_setup(self): 
         self.color_feature_extractor = build_color_feature_extractor()

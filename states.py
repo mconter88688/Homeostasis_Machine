@@ -16,12 +16,13 @@ sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 
 class NormalDataTraining(fsm.State):
-    def __init__(self, FSM, model_data, allsensors, temporal_model):
+    def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
         self.FSM = FSM
         self.num_frames = 0
         self.model_data = model_data
         self.allsensors = allsensors
         self.temporal_model = temporal_model
+        self.ldrd_temporal_model = ldrd_temporal_model
 
     def Enter(self):
         print("Normal Feedback Data Mode")
@@ -41,6 +42,8 @@ class NormalDataTraining(fsm.State):
             # Create and display the combined view
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
             cv2.imshow("Normal data", display)
+        if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
+            self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
         else:
             cv2.imshow("Control Window", cons.BLANK_SCREEN)
         key = cv2.waitKey(1) & 0xFF

@@ -29,37 +29,37 @@ from allsensors import AllSensors, AllSensorsData
 class Data:
     def __init__(self):
         self.normal_data = []
-        self.anomaly_data = []
+        self.ldrd_normal_data = []
         self.program_running = True
     
     def load_data(self, feedback_file):
         if os.path.exists(feedback_file):
             try:
                 with open(feedback_file, "rb") as f:
-                    self.normal_data, self.anomaly_data = pickle.load(f)
+                    self.normal_data, self.ldrd_normal_data = pickle.load(f)
             except EOFError:
-                self.normal_data, self.anomaly_data = [], []
+                self.normal_data, self.ldrd_normal_data = [], []
                 print("File is empty")
         else:
-            self.normal_data, self.anomaly_data = [], []
+            self.normal_data, self.ldrd_normal_data = [], []
             print("file does not exist")
 
     def clear_data(self):
-        self.anomaly_data.clear()
+        self.ldrd_normal_data.clear()
         self.normal_data.clear()
 
     def append_normal_data(self, new_data):
         self.normal_data.append(new_data)
     
-    def append_anomaly_data(self, new_data):
-        self.anomaly_data.append(new_data)
+    def append_ldrd_normal_data(self, new_data):
+        self.ldrd_normal_data.append(new_data)
 
     def save_data(self, feedback_file):
         with open(feedback_file, "wb") as f:
-            pickle.dump((self.normal_data, self.anomaly_data), f)
+            pickle.dump((self.normal_data, self.ldrd_normal_data), f)
 
     def is_empty(self):
-        return (len(self.normal_data) == 0 and len(self.anomaly_data) == 0)
+        return (len(self.normal_data) == 0 and len(self.ldrd_normal_data) == 0)
     
 
 
@@ -95,7 +95,7 @@ allsensors.start()
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, allsensors, image_autoencoder)
+hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, allsensors, image_autoencoder, ldrd_autoencoder)
 hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, allsensors, image_autoencoder)
 hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.IMAGE_MODEL_PATH, hs_model.FSM, model_data, model_params, image_autoencoder)
 hs_model.FSM.states["WipingModelAndFeedback"] = states.WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.IMAGE_MODEL_PATH, hs_model.FSM, model_data)
