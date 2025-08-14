@@ -44,6 +44,9 @@ class NormalDataTraining(fsm.State):
             cv2.imshow("Normal data", display)
         if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
             self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
+            if self.ldrd_temporal_model.are_buffers_long_enough():
+                self.model_data.append_ldrd_normal_data([np.stack(self.ldrd_temporal_model.lidar_buffer), 
+                                                         np.stack(self.ldrd_temporal_model.radar_buffer)])
         else:
             cv2.imshow("Control Window", cons.BLANK_SCREEN)
         key = cv2.waitKey(1) & 0xFF
@@ -354,11 +357,12 @@ class DocumentModel(fsm.State):
 
 
 class RLHF(fsm.State):
-    def __init__(self, FSM, model_data, allsensors, temporal_model):
+    def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
         self.FSM = FSM
         self.model_data = model_data
         self.allsensors = allsensors
         self.temporal_model = temporal_model
+        self.ldrd_temporal_model = ldrd_temporal_model
 
     def Enter(self):
         print("Human Feedback Mode")
@@ -367,22 +371,39 @@ class RLHF(fsm.State):
             self.allsensors.gemini.state = "RLHF"
 
     def Execute(self):
+        pred = None
+        pred_image = None
+        pred_ldrd = None
         all_sensor_data = self.allsensors.capture_sensor_info()
         if all_sensor_data and all_sensor_data.camera_data:
             feat = self.temporal_model.feature_extract_combine(all_sensor_data.camera_data.frame)
             self.temporal_model.feature_append(feat) # add 1D array to end of the buffer
 
-            
             if self.temporal_model.is_buffer_long_enough():
-                pred = self.temporal_model.model_prediction()
-                is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
-                self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+                pred_image = self.temporal_model.model_prediction()
+        
+        if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
+            self.ldrd_temporal_model.all_features_append(feat)
+           
+            if self.ldrd_temporal_model.are_buffers_long_enough():
+                pred_ldrd = self.ldrd_temporal_model.model_prediction()  
 
-                # Draw on frame
-            display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
-            cv2.imshow("Feedback Data", display)
-        else:
-            cv2.imshow("Control Window", cons.BLANK_SCREEN)
+        if pred_image and pred_ldrd:
+            pred = cons.IMAGE_COEFF*pred_image + (1-cons.IMAGE_COEFF)*pred_ldrd
+        elif pred_image:
+            pred = pred_image
+        elif pred_ldrd:
+            pred = pred_ldrd
+
+        if pred:    
+            is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
+            self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+
+            # Draw on frame
+        display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
+        cv2.imshow("Feedback Data", display)
+        # else:
+        #     cv2.imshow("Control Window", cons.BLANK_SCREEN)
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):

@@ -244,7 +244,23 @@ class LDRD03Autoencoder(HomeostasisModel):
         self.lidar_buffer.append(lidar_array)
         self.radar_buffer.append(radar_array)
 
+    def are_buffers_long_enough(self, buffer_len = cons.SEQ_LEN):
+        return (len(self.lidar_buffer) == buffer_len and len(self.radar_buffer) == buffer_len)
+
+    def model_prediction(self):
+        if not self.are_buffers_long_enough():
+            return None
+        else:
+            seq = [np.expand_dims(np.stack(self.lidar_buffer), axis=0), np.np.expand_dims(np.stack(self.lidar_buffer), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
+            # Get reconstruction from model
+            reconstruction = self.model.predict(seq) 
+
+            # Compute per-timestep MSE
+            errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  
+
+            return np.mean(errors)
         
+
     
 
 class ImageAutoencoder(HomeostasisModel):
@@ -309,7 +325,7 @@ class ImageAutoencoder(HomeostasisModel):
         return combined
 
     def model_prediction(self):
-        if not len(self.buffer) == cons.SEQ_LEN:
+        if not self.is_buffer_long_enough():
             return None
         else:
             seq = np.expand_dims(np.stack(self.buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
