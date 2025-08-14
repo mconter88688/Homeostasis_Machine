@@ -35,14 +35,15 @@ class RadarPreprocessedData:
         new_obj = RadarPreprocessedData()
         new_obj.are_there_prev_vals = self.are_there_prev_vals
         new_obj.timestamp = self.timestamp
-        new_obj.x_coords = self.x_coords
-        new_obj.y_coords = self.y_coords
-        new_obj.speeds = self.speeds
-        new_obj.distances = self.distances
-        new_obj.prev_x_coords = self.prev_x_coords
-        new_obj.prev_y_coords = self.prev_y_coords
-        new_obj.prev_speeds = self.prev_speeds
-        new_obj.prev_distances = self.prev_distances
+        new_obj.x_coords = self.x_coords.copy()
+        new_obj.y_coords = self.y_coords.copy()
+        new_obj.speeds = self.speeds.copy()
+        new_obj.distances = self.distances.copy()
+        new_obj.prev_x_coords = self.prev_x_coords.copy()
+        new_obj.prev_y_coords = self.prev_y_coords.copy()
+        new_obj.prev_speeds = self.prev_speeds.copy()
+        new_obj.prev_distances = self.prev_distances.copy()
+        return new_obj
 
 
     def ema(self):
