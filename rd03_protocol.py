@@ -31,7 +31,7 @@ class RadarPreprocessedData:
             self.distances[i] = radar_target[i].distance
 
     def class_to_single_numpy_array(self):
-        return np.vstack(self.x_coords, self.y_coords,  self.speeds, self.distances)
+        return np.vstack((self.x_coords, self.y_coords,  self.speeds, self.distances))
 
     def copy(self):
         new_obj = RadarPreprocessedData()
