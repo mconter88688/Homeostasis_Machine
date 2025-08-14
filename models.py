@@ -135,7 +135,7 @@ def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
                         outputs=[lidar_dec, radar_dec])
 
     autoencoder.compile(optimizer="adam", loss="mse")
-    autoencoder.summary()
+    #autoencoder.summary()
 
 
 
