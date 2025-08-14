@@ -65,8 +65,10 @@ class Data:
 
 
 ### SETUP ###
-autoencoder = mod.ImageAutoencoder()
-autoencoder.feature_extractor_setup()
+image_autoencoder = mod.ImageAutoencoder()
+image_autoencoder.feature_extractor_setup()
+
+ldrd_autoencoder = mod.LDRD03Autoencoder()
 
 model_data = Data()
 model_data.load_data(cons.FEEDBACK_FILE)
@@ -93,13 +95,13 @@ allsensors.start()
 
 print("About to make HS_MODEL")
 hs_model = fsm.HS_Model()
-hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, allsensors, autoencoder)
-hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, allsensors, autoencoder)
-hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.IMAGE_MODEL_PATH, hs_model.FSM, model_data, model_params, autoencoder)
+hs_model.FSM.states["NormalDataTraining"] = states.NormalDataTraining(hs_model.FSM, model_data, allsensors, image_autoencoder)
+hs_model.FSM.states["RLHF"] = states.RLHF(hs_model.FSM, model_data, allsensors, image_autoencoder)
+hs_model.FSM.states["SavingModelAndFeedback"] = states.SavingModelAndFeedback(cons.FEEDBACK_FILE, cons.IMAGE_MODEL_PATH, hs_model.FSM, model_data, model_params, image_autoencoder)
 hs_model.FSM.states["WipingModelAndFeedback"] = states.WipingModelAndFeedback(cons.FEEDBACK_FILE, cons.IMAGE_MODEL_PATH, hs_model.FSM, model_data)
 hs_model.FSM.states["Menu"] = states.Menu(hs_model.FSM)
-hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, autoencoder)
-hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, autoencoder)
+hs_model.FSM.states["DocumentModel"] = states.DocumentModel(hs_model.FSM, model_params, image_autoencoder)
+hs_model.FSM.states["LoadModel"] = states.LoadModel(hs_model.FSM, model_params, image_autoencoder)
 hs_model.FSM.states["DocumentFeedback"] = states.DocumentFeedback(hs_model.FSM, model_params, model_data)
 hs_model.FSM.states["End"] = states.End(hs_model.FSM, model_data, allsensors)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")

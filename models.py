@@ -104,6 +104,41 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 
     return model
 
+def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
+    # ----- LiDAR branch -----
+    lidar_input = Input(shape=(seq_len, 500, 2), name="lidar_input")
+    x1 = layers.TimeDistributed(layers.Conv1D(32, 3, activation="relu"))(lidar_input)
+    x1 = layers.TimeDistributed(layers.MaxPooling1D(2))(x1)
+    x1 = layers.TimeDistributed(layers.Flatten())(x1)
+    x1 = layers.LSTM(128, return_sequences=False)(x1)
+
+    # ----- Radar branch -----
+    radar_input = Input(shape=(seq_len, 3, 4), name="radar_input")
+    x2 = layers.TimeDistributed(layers.Flatten())(radar_input)
+    x2 = layers.LSTM(32, return_sequences=False)(x2)
+
+    # ----- Fusion -----
+    combined = layers.Concatenate()([x1, x2])
+    encoded = layers.Dense(128, activation="relu")(combined)  # bottleneck
+
+    # ----- Decoder -----
+    # LiDAR reconstruction
+    lidar_dec = layers.Dense(500*2*seq_len, activation="linear")(encoded)
+    lidar_dec = layers.Reshape((seq_len, 500, 2))(lidar_dec)
+
+    # Radar reconstruction
+    radar_dec = layers.Dense(3*4*seq_len, activation="linear")(encoded)
+    radar_dec = layers.Reshape((seq_len, 3, 4))(radar_dec)
+
+    # ----- Model -----
+    autoencoder = Model(inputs=[lidar_input, radar_input],
+                        outputs=[lidar_dec, radar_dec])
+
+    autoencoder.compile(optimizer="adam", loss="mse")
+    autoencoder.summary()
+
+
+
 ############# HELPER FUNCTIONS #########################################
 
 # Build or load temporal model
@@ -194,12 +229,23 @@ class HomeostasisModel:
             self.model = model_building_func()
         self.buffer = deque(maxlen=cons.SEQ_LEN)
 
+    def feature_append(self, feat):
+        self.buffer.append(feat)
+
+    def is_buffer_long_enough(self, buffer_len = cons.SEQ_LEN):
+        return len(self.buffer) == buffer_len
+    
+
 
 
 
 class LDRD03Autoencoder(HomeostasisModel):
     def __init__(self):
-        super().__init__(model_path= cons.LDRD_MODEL_PATH, model_building_func=build_image_model)
+        super().__init__(model_path= cons.LDRD_MODEL_PATH, model_building_func=build_ldrd_autoencoder)
+
+    
+        
+    
 
 class ImageAutoencoder(HomeostasisModel):
     def __init__(self):
@@ -254,9 +300,6 @@ class ImageAutoencoder(HomeostasisModel):
         combined = np.concatenate([color_features, hdr_features,left_ir_features, right_ir_features], axis=0)
         #print(combined.shape)
         return combined
-        
-    def feature_append(self, feat):
-        self.buffer.append(feat)
 
     def model_prediction(self):
         if not len(self.buffer) == cons.SEQ_LEN:
@@ -274,8 +317,6 @@ class ImageAutoencoder(HomeostasisModel):
     def fit(self, model_params, train_data_x, train_data_y):
         return self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
 
-    def is_buffer_long_enough(self):
-        return len(self.buffer) == cons.SEQ_LEN
         
     
 
