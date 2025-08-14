@@ -383,7 +383,7 @@ class RLHF(fsm.State):
                 pred_image = self.temporal_model.model_prediction()
         
         if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
-            self.ldrd_temporal_model.all_features_append(feat)
+            self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
            
             if self.ldrd_temporal_model.are_buffers_long_enough():
                 pred_ldrd = self.ldrd_temporal_model.model_prediction()  
