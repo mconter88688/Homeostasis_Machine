@@ -56,9 +56,9 @@ class NormalDataTraining(fsm.State):
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data):
+    def __init__(self, FEEDBACK_FILE, IMAGE_MODEL_PATH, FSM, model_data):
         self.FEEDBACK_FILE = FEEDBACK_FILE
-        self.MODEL_PATH = MODEL_PATH
+        self.IMAGE_MODEL_PATH = IMAGE_MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
 
@@ -71,8 +71,8 @@ class WipingModelAndFeedback(fsm.State):
         with open(cons.FEEDBACK_FILE, "wb") as f:
             pass
 
-        if os.path.exists(self.MODEL_PATH):
-            os.remove(self.MODEL_PATH)
+        if os.path.exists(self.IMAGE_MODEL_PATH):
+            os.remove(self.IMAGE_MODEL_PATH)
         print("Feedback and model successfully removed!")
         self.FSM.Transition("toMenu")
         return
@@ -124,9 +124,9 @@ class Menu(fsm.State):
 
 
 class SavingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params, temporal_model):
+    def __init__(self, FEEDBACK_FILE, IMAGE_MODEL_PATH, FSM, model_data, model_params, temporal_model):
         self.FEEDBACK_FILE = FEEDBACK_FILE
-        self.MODEL_PATH = MODEL_PATH
+        self.IMAGE_MODEL_PATH = IMAGE_MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
         self.model_params = model_params
@@ -139,7 +139,7 @@ class SavingModelAndFeedback(fsm.State):
         # Retrain model
         self.model_params.callbacks = [
                         EarlyStopping(patience=3, restore_best_weights=True),
-                        ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
+                        ModelCheckpoint(cons.BEST_IMAGE_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                     ]
         epoch_num = int(input("Epochs: "))
         batch_num = int(input("Batch Size: "))
@@ -175,7 +175,7 @@ class SavingModelAndFeedback(fsm.State):
             X = np.array(self.model_data.normal_data + self.model_data.anomaly_data)
             y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             history = self.temporal_model.fit(self.model_params, X,X)
-            self.temporal_model.model.save(cons.MODEL_PATH)
+            self.temporal_model.model.save(cons.IMAGE_MODEL_PATH)
             print("Model updated and saved.")
 
             answer = input("Would you like to graph the data? (Y/N)").strip().upper()

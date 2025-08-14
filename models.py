@@ -107,7 +107,7 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 ############# HELPER FUNCTIONS #########################################
 
 # Build or load temporal model
-def build_model():
+def build_image_model():
     return build_autoencoder_8_4()
 
 ########### FEATURE EXTRACTORS ###########################################
@@ -186,18 +186,27 @@ class ModelConfigParam:
         self.feedback_file = feedback_file
         self.model_file = model_file
 
-
-class ImageAutoencoder:
-    def __init__(self):
-        if os.path.exists(cons.MODEL_PATH):
-            self.model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models
+class HomeostasisModel:
+    def __init__(self, model_path, model_building_func):
+        if os.path.exists(model_path):
+            self.model = load_model(model_path) # function imported from tensorflow.keras.models
         else:
-            self.model = build_model()
+            self.model = model_building_func()
+        self.buffer = deque(maxlen=cons.SEQ_LEN)
+
+
+
+
+class LDRD03Autoencoder(HomeostasisModel):
+    def __init__(self):
+        super().__init__(model_path= cons.LDRD_MODEL_PATH, model_building_func=build_image_model)
+
+class ImageAutoencoder(HomeostasisModel):
+    def __init__(self):
+        super().__init__(model_path= cons.IMAGE_MODEL_PATH, model_building_func=build_image_model)
         self.color_feature_extractor = None
         self.ir_feature_extractor = None
         self.hdr_feature_extractor = None
-        self.buffer = deque(maxlen=cons.SEQ_LEN)
-
         
 
     def feature_extractor_setup(self): 

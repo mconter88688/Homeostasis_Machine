@@ -2,7 +2,8 @@ import numpy as np
 
 FEATURE_DIM = 1280
 SEQ_LEN = 20                # number of frames in sequence window
-MODEL_PATH = "homeostasis_model.h5"
+IMAGE_MODEL_PATH = "homeostasis_image_model.h5"
+LDRD_MODEL_PATH = "homeostatis_ldrd_model.h5"
 BEST_MODEL_PATH = "best_model.h5"
 FEEDBACK_FILE = "feedback.pkl"
 ANOMALY_THRESHOLD = 0.02    # threshold for non-homeostasis
