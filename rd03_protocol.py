@@ -3,6 +3,43 @@ from dataclasses import dataclass
 from typing import Optional
 import constants as cons
 from sensor import Sensor
+import numpy as np
+from dsp import ema
+from time import monotonic_ns
+
+RADAR_EMA_ALPHA = 0.6
+
+class RadarPreprocessedData:
+    def __init__(self):
+        self.x_coords = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in update_for_new_target_data
+        self.y_coords = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in update_for_new_target_data
+        self.speeds = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in update_for_new_target_data
+        self.distances = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in update_for_new_target_data
+        self.timestamp = None # rewritten in update_for_new_target_data
+        self.are_there_prev_vals = False # rewritten in ema
+        self.prev_x_coords = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten  in ema
+        self.prev_y_coords = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in ema
+        self.prev_speeds = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten  in ema
+        self.prev_distances = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in ema
+
+    def update_for_new_target_data(self, radar_target):
+        self.timestamp = monotonic_ns()
+        for i in range(cons.RADAR_MAX_TARGETS):
+            self.x_coords[i] = radar_target[i].x_coord
+            self.y_coords[i] = radar_target[i].y_coord
+            self.speeds[i] = radar_target[i].speed
+            self.distances[i] = radar_target[i].distance
+
+
+    def ema(self):
+        self.x_coords[:] = ema(self.prev_x_coords, self.x_coords, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
+        self.y_coords[:] = ema(self.prev_y_coords, self.y_coords, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
+        self.speeds[:] = ema(self.prev_speeds, self.speeds, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
+        self.distances[:] = ema(self.prev_distances, self.distances, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
+        self.are_there_prev_vals = True
+        
+        
+
 
 
 @dataclass
@@ -30,7 +67,6 @@ class RD03Protocol(Sensor):
     HEADER = bytes([0xAA, 0xFF, 0x03, 0x00])
     FOOTER = bytes([0x55, 0xCC])
     TARGET_DATA_SIZE = 8
-    MAX_TARGETS = 3
     
     WAITING_HEADER = 0
     READING_DATA = 1
@@ -60,6 +96,13 @@ class RD03Protocol(Sensor):
         abs_value = value & 0x7FFF
         return -abs_value if is_negative else abs_value
 
+    def dsp_and_send_scan(self, radar_target, radar_preprocessed_data):
+        radar_preprocessed_data.update_for_new_target_data(radar_target)
+        radar_preprocessed_data.ema()
+        with self.lock:
+            self.latest_data = radar_preprocessed_data    
+
+    
     def _parse_target_data(self, data: bytes) -> Optional[RadarTarget]:
         """Parse 8 bytes of target data into a RadarTarget object"""
         # if all(b == 0 for b in data):  # Check if target data is all zeros
@@ -86,7 +129,8 @@ class RD03Protocol(Sensor):
         print("read_frame running")
         frame_data = bytearray()
         header_found = False
-        
+        radar_preprocessed_data = RadarPreprocessedData()
+
         while self.running:
             if self.serial.in_waiting:
                 byte = ord(self.serial.read())
@@ -123,11 +167,10 @@ class RD03Protocol(Sensor):
                                     targets.append(target)
                             # for target in targets:
                             #     print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+                            
                             frame_data = bytearray()
                             header_found = False
-                            with self.lock:
-                                self.latest_data = targets    
-                            
+                            self.dsp_and_send_scan(targets, radar_preprocessed_data)
                             
                         else:
                             print("invalid frame")

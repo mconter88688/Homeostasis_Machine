@@ -21,3 +21,4 @@ LIDAR_PORT = "/dev/lidar"
 TIMEOUT = 1
 BLANK_SCREEN = np.zeros((200, 400, 3), dtype=np.uint8)
 LIDAR_MAX_POINTS_NUM = 505
+RADAR_MAX_TARGETS = 3

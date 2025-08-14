@@ -3,6 +3,7 @@ import rd03_protocol as rd
 import camera as cam
 from typing import Optional, List
 from dataclasses import dataclass
+import constants as cons
 #from time import sleep
 
 
@@ -11,7 +12,7 @@ from dataclasses import dataclass
 class AllSensorsData:
     camera_data: cam.CameraData
     lidar_data: Optional[ld.LiDARPreprocessedData] = None
-    rd03_data: Optional[List[rd.RadarTarget]] = None
+    rd03_data: Optional[rd.RadarPreprocessedData] = None
     
 
     
@@ -83,8 +84,8 @@ class AllSensors:
                     print("No targets found")
                     return None
                 else:
-                    for target in targets:
-                        print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+                    for i in range(cons.RADAR_MAX_TARGETS):
+                        print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speed[i]}")
             except Exception as e:
                 print(f"[Radar Error] {e}")
         return AllSensorsData(lidar_data = lidar_scan, rd03_data = targets, camera_data=camera_data)

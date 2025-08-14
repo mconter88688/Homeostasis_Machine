@@ -10,6 +10,7 @@ import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from dsp import ema
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -29,15 +30,12 @@ MAX_MEAS_RADIUS = 12000
 MIN_MEAS_RADIUS = 20
 NUM_BINS = 500
 MEDIAN_FILTER_KERNEL_SIZE = 6
-EMA_ALPHA = 0.3
+LIDAR_EMA_ALPHA = 0.4
 
 def within_radius(distance):
     return (distance >= MIN_MEAS_RADIUS and distance <= MAX_MEAS_RADIUS)
 
-def ema(prev_data, new_unsmoothed_data, prev_data_flag, alpha = EMA_ALPHA):
-    if not prev_data_flag:
-        return new_unsmoothed_data
-    return alpha * new_unsmoothed_data + (1 - alpha) * prev_data
+
 
 
 class LiDARPreprocessedData:
@@ -66,7 +64,7 @@ class LiDARPreprocessedData:
         self.intensity_array[:] = filtered_intensity
         self.distance_array[:] = filtered_distance
 
-    def ema(self, alpha = EMA_ALPHA):
+    def ema(self, alpha = LIDAR_EMA_ALPHA):
         self.distance_array[:] = ema(self.prev_distance,self.distance_array, self.are_there_prev_vals, alpha)
         self.intensity_array[:] = ema(self.prev_intensity, self.intensity_array, self.are_there_prev_vals, alpha)
         self.are_there_prev_vals = True
