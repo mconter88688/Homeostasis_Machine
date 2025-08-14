@@ -136,6 +136,7 @@ def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
 
     autoencoder.compile(optimizer="adam", loss="mse")
     #autoencoder.summary()
+    return autoencoder
 
 
 
