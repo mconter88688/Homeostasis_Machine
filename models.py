@@ -252,7 +252,7 @@ class LDRD03Autoencoder(HomeostasisModel):
         if not self.are_buffers_long_enough():
             return None
         else:
-            seq = [np.expand_dims(np.stack(self.lidar_buffer), axis=0), np.expand_dims(np.stack(self.lidar_buffer), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
+            seq = [np.expand_dims(np.stack(self.lidar_buffer), axis=0), np.expand_dims(np.stack(self.radar_buffer), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
             # Get reconstruction from model
             reconstruction = self.model.predict(seq) 
 
