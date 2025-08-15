@@ -63,9 +63,10 @@ class NormalDataTraining(fsm.State):
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, IMAGE_MODEL_PATH, FSM, model_data):
+    def __init__(self, FEEDBACK_FILE, IMAGE_MODEL_PATH, LDRD_MODEL_PATH, FSM, model_data):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.IMAGE_MODEL_PATH = IMAGE_MODEL_PATH
+        self.LDRD_MODEL_PATH = LDRD_MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
 
@@ -80,6 +81,8 @@ class WipingModelAndFeedback(fsm.State):
 
         if os.path.exists(self.IMAGE_MODEL_PATH):
             os.remove(self.IMAGE_MODEL_PATH)
+        if os.path.exists(self.LDRD_MODEL_PATH):
+             os.remove(self.LDRD_MODEL_PATH)
         print("Feedback and model successfully removed!")
         self.FSM.Transition("toMenu")
         return
@@ -411,12 +414,12 @@ class RLHF(fsm.State):
         if key == ord('q'):
             self.FSM.Transition("toMenu")
             return
-        elif key == ord('n') and self.temporal_model.is_buffer_long_enough():
-            self.model_data.append_normal_data(np.stack(self.buffer))
-            print("Labeled one normal sequence")
-        elif key == ord('a') and self.temporal_model.is_buffer_long_enough():
-            self.model_data.append_anomaly_data(np.stack(self.buffer))
-            print("Labeled one anomalous sequence")
+        # elif key == ord('n') and self.temporal_model.is_buffer_long_enough():
+        #     self.model_data.append_normal_data(np.stack(self.buffer))
+        #     print("Labeled one normal sequence")
+        # elif key == ord('a') and self.temporal_model.is_buffer_long_enough():
+        #     self.model_data.append_anomaly_data(np.stack(self.buffer))
+        #     print("Labeled one anomalous sequence")
 
     def Exit(self):
         self.temporal_model.buffer.clear()
