@@ -240,8 +240,8 @@ class LDRD03Autoencoder(HomeostasisModel):
         self.radar_buffer = deque(maxlen=cons.SEQ_LEN)
 
     def all_features_append(self, lidar_preprocessed_data, radar_preprocessed_data):
-        lidar_array = lidar_preprocessed_data.class_to_single_numpy_array()
-        radar_array = radar_preprocessed_data.class_to_single_numpy_array()
+        lidar_array = lidar_preprocessed_data.class_to_single_normalized_numpy_array()
+        radar_array = radar_preprocessed_data.class_to_single_normalized_numpy_array()
         self.lidar_buffer.append(lidar_array)
         self.radar_buffer.append(radar_array)
 

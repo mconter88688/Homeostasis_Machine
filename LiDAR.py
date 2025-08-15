@@ -26,11 +26,12 @@ from dsp import ema, within_radius
 
 POINTS = 12
 PACKET_LENGTH = 47
-MAX_MEAS_RADIUS = 12000
-MIN_MEAS_RADIUS = 20
+MAX_MEAS_RADIUS = 12000.0
+MIN_MEAS_RADIUS = 20.0
 NUM_BINS = 500
 MEDIAN_FILTER_KERNEL_SIZE = 6
 LIDAR_EMA_ALPHA = 0.4
+MAX_INTENSITY = 255.0
 
 
 
@@ -73,7 +74,7 @@ class LiDARPreprocessedData:
         self.intensity_array[:] = np.interp(self.angle_array, lidar_intake_data.angles, lidar_intake_data.intensities, period = 360)
     
     def class_to_single_numpy_array(self):
-        return np.column_stack((self.distance_array, self.intensity_array))
+        return np.column_stack((self.distance_array/ MAX_MEAS_RADIUS, self.intensity_array / MAX_INTENSITY))
     
     def dsp_lidar(self, lidar_intake_data):
         self.bin_lidar_data(lidar_intake_data)

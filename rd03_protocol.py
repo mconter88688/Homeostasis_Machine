@@ -9,8 +9,10 @@ from time import monotonic_ns
 import math
 
 RADAR_EMA_ALPHA = 0.6
-RADAR_MAX_RANGE = 8000
-RADAR_MIN_RANGE = 10
+RADAR_MAX_RANGE = 8000.0
+RADAR_MIN_RANGE = 10.0
+RADAR_MAX_ANGLE = np.pi
+RADAR_MAX_SPEED = 300.0 # (3 m/s)
 
 
 
@@ -36,8 +38,8 @@ class RadarPreprocessedData:
             self.speeds[i] = radar_target[i].speed
             self.distances[i] = radar_target[i].distance
 
-    def class_to_single_numpy_array(self):
-        return np.column_stack((self.angles,  self.speeds, self.distances))
+    def class_to_single_normalized_numpy_array(self):
+        return np.column_stack((self.angles / RADAR_MAX_ANGLE,  self.speeds / RADAR_MAX_SPEED, self.distances / RADAR_MAX_RANGE))
 
     def copy(self):
         new_obj = RadarPreprocessedData()
