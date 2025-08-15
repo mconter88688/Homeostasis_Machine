@@ -25,6 +25,8 @@ import LiDAR as ld
 import states
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 from allsensors import AllSensors, AllSensorsData
+from disk_storage import get_free_space_gb, is_there_still_space_for_data_collection_and_transfer
+import subprocess
 
 class Data:
     def __init__(self):
@@ -126,7 +128,16 @@ hs_model.FSM.transitions["toLoadLDRDModel"] = fsm.Transition("LoadLDRDModel")
 hs_model.FSM.transitions["toDocumentFeedback"] = fsm.Transition("DocumentFeedback")
 hs_model.FSM.transitions["toEnd"] = fsm.Transition("End")
 
+initial_free = get_free_space_gb(cons.MOUNT_POINT_FOR_STORAGE)
+print(f"Starting with {initial_free} GiB free")
+
 hs_model.FSM.Transition("toMenu")
 print("About to execute HS_MODEL")
 while model_data.program_running:
-    hs_model.FSM.Execute()
+    if is_there_still_space_for_data_collection_and_transfer(cons.MOUNT_POINT_FOR_STORAGE, initial_free):
+        hs_model.FSM.Execute()
+    else:
+        print(f"Stopping: only {get_free_space_gb(cons.MOUNT_POINT_FOR_STORAGE)} GB free. Shutting down...")
+        hs_model.FSM.Transition("toEnd")
+        hs_model.FSM.Execute()
+subprocess.run(["sudo", "shutdown", "now"])
