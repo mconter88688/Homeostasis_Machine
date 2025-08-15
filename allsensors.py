@@ -85,8 +85,8 @@ class AllSensors:
                     return None
                 else:
                     for i in range(cons.RADAR_MAX_TARGETS):
-                        print(targets.distances[i])
-                        #print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}")
+                        #print(targets.distances[i])
+                        print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}, Angle: {targets.angles[i]}")
                     print("******************")
             except Exception as e:
                 print(f"[Radar Error] {e}")
