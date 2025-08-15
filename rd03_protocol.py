@@ -4,10 +4,14 @@ from typing import Optional
 import constants as cons
 from sensor import Sensor
 import numpy as np
-from dsp import ema
+from dsp import ema, within_radius
 from time import monotonic_ns
 
 RADAR_EMA_ALPHA = 0.6
+RADAR_MAX_RANGE = 8000
+RADAR_MIN_RANGE = 10
+
+
 
 class RadarPreprocessedData:
     def __init__(self):
@@ -149,6 +153,7 @@ class RD03Protocol(Sensor):
         radar_preprocessed_data = RadarPreprocessedData()
 
         while self.running:
+            within_distance = True
             if self.serial.in_waiting:
                 byte = ord(self.serial.read())
                 #print(hex(byte))
@@ -180,6 +185,10 @@ class RD03Protocol(Sensor):
                                 target_data = frame_data[data_start + i*8:data_start + (i+1)*8]
                                 target = self._parse_target_data(target_data)
                                 if target is not None:
+                                    if not within_radius(target.distance, RADAR_MIN_RANGE, RADAR_MAX_RANGE):
+                                        within_distance = False
+                                        continue
+                                    
                                     # print("target " + str(i) + " found")
                                     targets.append(target)
                             # for target in targets:
@@ -187,7 +196,8 @@ class RD03Protocol(Sensor):
                             
                             frame_data = bytearray()
                             header_found = False
-                            self.dsp_and_send_scan(targets, radar_preprocessed_data)
+                            if within_distance:
+                                self.dsp_and_send_scan(targets, radar_preprocessed_data)
                             
                         else:
                             print("invalid frame")

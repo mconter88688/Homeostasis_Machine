@@ -10,7 +10,7 @@ import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from dsp import ema
+from dsp import ema, within_radius
 
 # LIDAR documentation: https://github.com/LudovaTech/lidar-LD19-tutorial
 #Baud Rate: 230400
@@ -31,9 +31,6 @@ MIN_MEAS_RADIUS = 20
 NUM_BINS = 500
 MEDIAN_FILTER_KERNEL_SIZE = 6
 LIDAR_EMA_ALPHA = 0.4
-
-def within_radius(distance):
-    return (distance >= MIN_MEAS_RADIUS and distance <= MAX_MEAS_RADIUS)
 
 
 
@@ -297,7 +294,7 @@ class LD19(Sensor):
             for i in range(POINTS):
                 offset = 6 + i * 3
                 distance = struct.unpack('<H', packet[offset:offset+2])[0] # unit is mm
-                if not within_radius(distance):
+                if not within_radius(distance, MIN_MEAS_RADIUS, MAX_MEAS_RADIUS):
                     continue
                 intensity = packet[offset+2]
                 angle = (start_angle + i * angle_increment) % 360.0
