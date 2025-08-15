@@ -229,6 +229,9 @@ class HomeostasisModel:
         else:
             self.model = model_building_func()
     
+    def fit(self, model_params, train_data_x, train_data_y):
+        return self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
+
 
 
 
@@ -338,9 +341,6 @@ class ImageAutoencoder(HomeostasisModel):
 
             return np.mean(errors)
         
-    def fit(self, model_params, train_data_x, train_data_y):
-        return self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
-
         
     
 
