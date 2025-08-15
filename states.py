@@ -169,7 +169,7 @@ class TrainingModel(fsm.State):
                         EarlyStopping(patience=3, restore_best_weights=True),
                         ModelCheckpoint(self.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                     ]
-        print(self.model_params.callbacks)
+        #print(self.model_params.callbacks)
         epoch_num = int(input("Epochs: "))
         batch_num = int(input("Batch Size: "))
         validation_num = float(input("Validation Split: "))
@@ -201,9 +201,9 @@ class TrainingModel(fsm.State):
             print("Retraining model with feedback data...")
             # Create training sets
             if self.name_of_model == cons.IMAGE_NAME:
-                X = np.array(self.model_data.normal_data)
+                X = self.model_data.normal_data
             elif self.name_of_model == cons.LDRD_NAME:
-                X = np.array(self.model_data.ldrd_normal_data)
+                X = self.model_data.ldrd_normal_data
             else: 
                 print("Invalid model type. Returning to main menu.")
                 self.FSM.Transition("toMenu")
