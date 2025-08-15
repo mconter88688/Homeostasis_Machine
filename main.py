@@ -34,7 +34,7 @@ class Data:
         self.program_running = True
     
     def load_data(self, feedback_file):
-        if False: #os.path.exists(feedback_file):
+        if os.path.exists(feedback_file):
             try:
                 with open(feedback_file, "rb") as f:
                     self.normal_data, self.ld_normal_data, self.rd03_normal_data = pickle.load(f)
