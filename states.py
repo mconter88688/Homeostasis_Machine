@@ -100,8 +100,7 @@ class Menu(fsm.State):
     def Enter(self):
         print("**Select from the following:**")
         print("Wipe Model and Feedback:...........................W")
-        print("Retrain Image Model:...............................I")
-        print("Retrain LDRD Model:................................L")
+        print("Retrain Model:.....................................R")
         print("Take in Normal Training Data:......................N")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
@@ -114,18 +113,30 @@ class Menu(fsm.State):
         answer = input("").strip().upper()
         if answer == "W":
             self.FSM.Transition("toWipingModelAndFeedback")
-        elif answer == "I":
-            self.FSM.Transition("toTrainingImageModel")
-        elif answer == "L":
-            self.FSM.Transition("toTrainingLDRDModel")
+        elif answer == "R":
+            answer = input("Would you like to train the image (I) or the LDRD (L) model?").strip().upper()
+            if answer == "I":
+                self.FSM.Transition("toTrainingImageModel")
+            elif answer == "L":
+                self.FSM.Transition("toTrainingLDRDModel")
+            else:
+                print("Invalid Input")
         elif answer == "N":
             self.FSM.Transition("toNormalDataTraining")
         elif answer == "F":
             self.FSM.Transition("toRLHF")
         elif answer == "M":
-            self.FSM.Transition("toDocumentModel")
+            answer = input("Would you like to document the image (I) or the LDRD (L) model?").strip().upper()
+            if answer == "I":
+                self.FSM.Transition("toDocumentImageModel")
+            elif answer == "L":
+                self.FSM.Transition("toDocumentLDRDModel")
         elif answer == "L":
-            self.FSM.Transition("toLoadModel")
+            answer = input("Would you like to load in the image (I) or the LDRD (L) model?").strip().upper()
+            if answer == "I":
+                self.FSM.Transition("toLoadImageModel")
+            elif answer == "L":
+                self.FSM.Transition("toLoadLDRDModel")
         elif answer == "D":
             self.FSM.Transition("toDocumentFeedback")
         elif answer == "Q":
@@ -231,10 +242,10 @@ class TrainingModel(fsm.State):
                     
                     self.model_params.temp_graph = graph_path
                     
-                    if self.name_of_model == "IMAGE":
+                    if self.name_of_model == cons.IMAGE_NAME:
                         self.FSM.Transition("toDocumentImageModel")
                         return
-                    elif self.name_of_model == "LDRD":
+                    elif self.name_of_model == cons.LDRD_NAME:
                         self.FSM.Transition("toDocumentLDRDModel")
                         return
                     else: 
@@ -251,31 +262,33 @@ class TrainingModel(fsm.State):
 
 
 class LoadModel(fsm.State):
-    def __init__(self, FSM, model_params, temporal_model):
+    def __init__(self, FSM, model_params, temporal_model, MODEL_FOLDER, name_of_model):
         self.FSM = FSM
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.MODEL_FOLDER = MODEL_FOLDER
+        self.name_of_model = name_of_model
 
     def Enter(self):
         print("Available model folders:")
-        for folder in os.listdir(cons.MODEL_FOLDER):
+        for folder in os.listdir(self.MODEL_FOLDER):
             print("-", folder)
 
     def Execute(self):
-        if not os.listdir(cons.MODEL_FOLDER):
-            print("MODEL_FOLDER is empty.")
+        if not os.listdir(self.MODEL_FOLDER):
+            print(self.name_of_model + " MODEL_FOLDER is empty.")
             self.FSM.Transition("toMenu")
             return
         good_model = False
         while not good_model:
-            answer = input("Select model to load: ").replace(" ", "")
+            answer = input("Select " + self.name_of_model + " model to load: ").replace(" ", "")
             if answer.upper() == "Q":
                 print("Quitting...")
                 self.FSM.Transition("toMenu")
                 return
-            if answer in os.listdir(cons.MODEL_FOLDER):
+            if answer in os.listdir(self.MODEL_FOLDER):
                 good_model = True
-                self.temporal_model.model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".h5"))
+                self.temporal_model.model = load_model(os.path.join(os.getcwd(), self.MODEL_FOLDER, answer, answer + ".h5"))
                 self.model_params.epochs = 0
                 self.model_params.batch_size = 0
                 self.model_params.validation_split = 0
@@ -290,10 +303,10 @@ class LoadModel(fsm.State):
 
 ## TODO: Finish document feedback
 class DocumentFeedback(fsm.State):
-    def __init__(self, FSM, model_params, model_data):
+    def __init__(self, FSM, model_params_list, model_data):
         self.FSM = FSM
-        self.model_params = model_params
         self.model_data = model_data
+        self.model_params_list = model_params_list
     
     def Enter(self):
         pass
@@ -317,7 +330,8 @@ class DocumentFeedback(fsm.State):
         self.model_data.save_data(cons.FEEDBACK_FILE)
         self.model_data.save_data(file_path)
         info_path = os.path.join(folder_path, "info.txt")
-        self.model_params.feedback_file = file_path
+        for model_params in self.model_params_list:
+            model_params.feedback_file = file_path
         notes = input("Notes: ")
         with open(info_path, 'w') as f:
             f.write(notes)
@@ -329,14 +343,15 @@ class DocumentFeedback(fsm.State):
 
 
 class DocumentModel(fsm.State):
-    def __init__(self, FSM, model_params, temporal_model, MODEL_FOLDER):
+    def __init__(self, FSM, model_params, temporal_model, MODEL_FOLDER, name_of_model):
         self.FSM = FSM
         self.model_params = model_params
         self.temporal_model = temporal_model
         self.MODEL_FOLDER = MODEL_FOLDER
+        self.name_of_model = name_of_model
 
     def Enter(self):
-        pass
+        print("Documenting the " + self.name_of_model + " model")
 
     def Execute(self):
         good_file = False
