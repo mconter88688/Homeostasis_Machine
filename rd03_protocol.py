@@ -63,7 +63,8 @@ class RadarPreprocessedData:
         self.are_there_prev_vals = True
         
     def coords_to_angles(self):
-        self.angles[:] = math.atan2(self.y_coords, self.x_coords)
+        for i in range(len(self.y_coords)):
+            self.angles[i] = math.atan2(self.y_coords[i], self.x_coords[i])
 
 
 
