@@ -47,8 +47,8 @@ class NormalDataTraining(fsm.State):
         if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
             self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
             if self.ldrd_temporal_model.are_buffers_long_enough():
-                self.model_data.append_ldrd_normal_data([np.stack(self.ldrd_temporal_model.lidar_buffer), 
-                                                         np.stack(self.ldrd_temporal_model.radar_buffer)])
+                self.model_data.append_ld_normal_data(np.stack(self.ldrd_temporal_model.lidar_buffer)) 
+                self.model_data.append_rd03_normal_data(np.stack(self.ldrd_temporal_model.radar_buffer))
         
         key = cv2.waitKey(1) & 0xFF
 
@@ -203,8 +203,8 @@ class TrainingModel(fsm.State):
             if self.name_of_model == cons.IMAGE_NAME:
                 X = self.model_data.normal_data
             elif self.name_of_model == cons.LDRD_NAME:
-                X = self.model_data.ldrd_normal_data
-                print(X)
+                X = [self.model_data.ld_normal_data, self.model_data.rd03_normal_data]
+                #print(X)
             else: 
                 print("Invalid model type. Returning to main menu.")
                 self.FSM.Transition("toMenu")
