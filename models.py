@@ -127,7 +127,7 @@ def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
     lidar_dec = layers.Reshape((seq_len, 500, 2))(lidar_dec)
 
     # Radar reconstruction
-    radar_dec = layers.Dense(3*4*seq_len, activation="linear")(encoded)
+    radar_dec = layers.Dense(3*3*seq_len, activation="linear")(encoded)
     radar_dec = layers.Reshape((seq_len, 3, 3))(radar_dec)
 
     # ----- Model -----
