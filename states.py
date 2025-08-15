@@ -169,6 +169,7 @@ class TrainingModel(fsm.State):
                             EarlyStopping(patience=3, restore_best_weights=True),
                             ModelCheckpoint(cons.BEST_IMAGE_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                         ]
+        print(self.model_params.callbacks)
         epoch_num = int(input("Epochs: "))
         batch_num = int(input("Batch Size: "))
         validation_num = float(input("Validation Split: "))
