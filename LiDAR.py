@@ -73,7 +73,7 @@ class LiDARPreprocessedData:
         self.distance_array[:] = np.interp(self.angle_array, lidar_intake_data.angles, lidar_intake_data.distances, period = 360)
         self.intensity_array[:] = np.interp(self.angle_array, lidar_intake_data.angles, lidar_intake_data.intensities, period = 360)
     
-    def class_to_single_numpy_array(self):
+    def class_to_single_normalized_numpy_array(self):
         return np.column_stack((self.distance_array/ MAX_MEAS_RADIUS, self.intensity_array / MAX_INTENSITY))
     
     def dsp_lidar(self, lidar_intake_data):
