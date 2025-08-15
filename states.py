@@ -42,13 +42,14 @@ class NormalDataTraining(fsm.State):
             # Create and display the combined view
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
             cv2.imshow("Normal data", display)
+        else:
+            cv2.imshow("Control Window", cons.BLANK_SCREEN)
         if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
             self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
             if self.ldrd_temporal_model.are_buffers_long_enough():
                 self.model_data.append_ldrd_normal_data([np.stack(self.ldrd_temporal_model.lidar_buffer), 
                                                          np.stack(self.ldrd_temporal_model.radar_buffer)])
-        else:
-            cv2.imshow("Control Window", cons.BLANK_SCREEN)
+        
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
