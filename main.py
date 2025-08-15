@@ -140,4 +140,4 @@ while model_data.program_running:
         print(f"Stopping: only {get_free_space_gb(cons.MOUNT_POINT_FOR_STORAGE)} GB free. Shutting down...")
         hs_model.FSM.Transition("toEnd")
         hs_model.FSM.Execute()
-subprocess.run(["sudo", "shutdown", "now"])
+        subprocess.run(["sudo", "shutdown", "now"])
