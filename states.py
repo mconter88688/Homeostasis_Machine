@@ -204,6 +204,7 @@ class TrainingModel(fsm.State):
                 X = self.model_data.normal_data
             elif self.name_of_model == cons.LDRD_NAME:
                 X = self.model_data.ldrd_normal_data
+                print(X)
             else: 
                 print("Invalid model type. Returning to main menu.")
                 self.FSM.Transition("toMenu")
