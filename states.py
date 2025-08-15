@@ -76,7 +76,8 @@ class WipingModelAndFeedback(fsm.State):
     def Execute(self):
         self.model_data.clear_data()
         
-        with open(cons.FEEDBACK_FILE, "wb") as f:
+        # Clear Feedback Data
+        with open(self.FEEDBACK_FILE, "wb") as f:
             pass
 
         if os.path.exists(self.IMAGE_MODEL_PATH):
@@ -99,7 +100,8 @@ class Menu(fsm.State):
     def Enter(self):
         print("**Select from the following:**")
         print("Wipe Model and Feedback:...........................W")
-        print("Retrain Model:.....................................R")
+        print("Retrain Image Model:...............................I")
+        print("Retrain LDRD Model:................................L")
         print("Take in Normal Training Data:......................N")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
@@ -112,8 +114,10 @@ class Menu(fsm.State):
         answer = input("").strip().upper()
         if answer == "W":
             self.FSM.Transition("toWipingModelAndFeedback")
-        elif answer == "R":
-            self.FSM.Transition("toSavingModelAndFeedback")
+        elif answer == "I":
+            self.FSM.Transition("toTrainingImageModel")
+        elif answer == "L":
+            self.FSM.Transition("toTrainingLDRDModel")
         elif answer == "N":
             self.FSM.Transition("toNormalDataTraining")
         elif answer == "F":
@@ -133,30 +137,32 @@ class Menu(fsm.State):
         pass
 
 
-class SavingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, IMAGE_MODEL_PATH, FSM, model_data, model_params, temporal_model):
+
+class TrainingModel(fsm.State):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params, temporal_model, name_of_model = ""):
         self.FEEDBACK_FILE = FEEDBACK_FILE
-        self.IMAGE_MODEL_PATH = IMAGE_MODEL_PATH
+        self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.name_of_model = name_of_model
     
     def Enter(self):
-        print("Saving Model and Feedback File")
+        print("Saving " + self.name_of_model + " Model")
 
     def Execute(self):
         # Retrain model
-        self.model_params.callbacks = [
-                        EarlyStopping(patience=3, restore_best_weights=True),
-                        ModelCheckpoint(cons.BEST_IMAGE_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
-                    ]
+        if self.model_params.callbacks == None:
+            self.model_params.callbacks = [
+                            EarlyStopping(patience=3, restore_best_weights=True),
+                            ModelCheckpoint(cons.BEST_IMAGE_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
+                        ]
         epoch_num = int(input("Epochs: "))
         batch_num = int(input("Batch Size: "))
         validation_num = float(input("Validation Split: "))
         self.model_params.redefine_all(epoch_num, batch_num, validation_num, None, None)
         answer = input("Would you like to load a saved data file?").strip().upper()
-        ## TODO: Complete this load data file thing
         if answer == "Y":
             print("Available data folders:")
             for folder in os.listdir(cons.DATA_FOLDER):
@@ -177,15 +183,15 @@ class SavingModelAndFeedback(fsm.State):
                         print("Data file does not exist. Try again")
             
         # Save feedback into file
-        self.model_data.save_data(cons.FEEDBACK_FILE)
+        self.model_data.save_data(self.FEEDBACK_FILE)
         
         if not self.model_data.is_empty():
             print("Retraining model with feedback data...")
             # Create training sets
-            X = np.array(self.model_data.normal_data + self.model_data.anomaly_data)
-            y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
+            X = np.array(self.model_data.normal_data + self.model_data.ldrd_normal_data)
+            # y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             history = self.temporal_model.fit(self.model_params, X,X)
-            self.temporal_model.model.save(cons.IMAGE_MODEL_PATH)
+            self.temporal_model.model.save(self.MODEL_PATH)
             print("Model updated and saved.")
 
             answer = input("Would you like to graph the data? (Y/N)").strip().upper()
@@ -225,7 +231,16 @@ class SavingModelAndFeedback(fsm.State):
                     
                     self.model_params.temp_graph = graph_path
                     
-                    self.FSM.Transition("toDocumentModel")
+                    if self.name_of_model == "IMAGE":
+                        self.FSM.Transition("toDocumentImageModel")
+                        return
+                    elif self.name_of_model == "LDRD":
+                        self.FSM.Transition("toDocumentLDRDModel")
+                        return
+                    else: 
+                        print("Model type not detected, so not saved")
+                        self.FSM.Transition("toMenu")
+                        return
                     return
 
         self.FSM.Transition("toMenu")
@@ -314,10 +329,11 @@ class DocumentFeedback(fsm.State):
 
 
 class DocumentModel(fsm.State):
-    def __init__(self, FSM, model_params, temporal_model):
+    def __init__(self, FSM, model_params, temporal_model, MODEL_FOLDER):
         self.FSM = FSM
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.MODEL_FOLDER = MODEL_FOLDER
 
     def Enter(self):
         pass
@@ -331,7 +347,7 @@ class DocumentModel(fsm.State):
                 self.FSM.Transition("toMenu")
                 return
             file_name = answer + ".h5"
-            folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer)
+            folder_path = os.path.join(os.getcwd(), self.MODEL_FOLDER, answer)
             file_path = os.path.join(folder_path, file_name)
             if os.path.exists(folder_path):
                 print("Model name already exists. Try again.")
