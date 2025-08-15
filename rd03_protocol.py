@@ -185,8 +185,9 @@ class RD03Protocol(Sensor):
                                 target = self._parse_target_data(target_data)
                                 if target is not None:
                                     if not within_radius(target.distance, RADAR_MIN_RANGE, RADAR_MAX_RANGE):
-                                        within_distance = False
-                                        continue
+                                        #within_distance = False
+                                        #continue
+                                        pass
                                     
                                     # print("target " + str(i) + " found")
                                     targets.append(target)
