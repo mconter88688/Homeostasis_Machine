@@ -6,6 +6,7 @@ from sensor import Sensor
 import numpy as np
 from dsp import ema, within_radius
 from time import monotonic_ns
+import math
 
 RADAR_EMA_ALPHA = 0.6
 RADAR_MAX_RANGE = 8000
@@ -25,6 +26,7 @@ class RadarPreprocessedData:
         self.prev_y_coords = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in ema
         self.prev_speeds = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten  in ema
         self.prev_distances = np.zeros(cons.RADAR_MAX_TARGETS) # rewritten in ema
+        self.angles = np.zeros(cons.RADAR_MAX_TARGETS)
 
     def update_for_new_target_data(self, radar_target):
         self.timestamp = monotonic_ns()
@@ -35,7 +37,7 @@ class RadarPreprocessedData:
             self.distances[i] = radar_target[i].distance
 
     def class_to_single_numpy_array(self):
-        return np.column_stack((self.x_coords, self.y_coords,  self.speeds, self.distances))
+        return np.column_stack((self.angles,  self.speeds, self.distances))
 
     def copy(self):
         new_obj = RadarPreprocessedData()
@@ -49,6 +51,7 @@ class RadarPreprocessedData:
         new_obj.prev_y_coords = self.prev_y_coords.copy()
         new_obj.prev_speeds = self.prev_speeds.copy()
         new_obj.prev_distances = self.prev_distances.copy()
+        new_obj.angles = self.angles.copy()
         return new_obj
 
 
@@ -59,7 +62,9 @@ class RadarPreprocessedData:
         self.distances[:] = ema(self.prev_distances, self.distances, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
         self.are_there_prev_vals = True
         
-        
+    def coords_to_angles(self):
+        self.angles[:] = math.atan2(self.y_coords, self.x_coords)
+
 
 
 
@@ -116,9 +121,10 @@ class RD03Protocol(Sensor):
         abs_value = value & 0x7FFF
         return -abs_value if is_negative else abs_value
 
-    def dsp_and_send_scan(self, radar_target, radar_preprocessed_data):
+    def dsp_and_send_scan(self, radar_target:RadarTarget, radar_preprocessed_data: RadarPreprocessedData):
         radar_preprocessed_data.update_for_new_target_data(radar_target)
         radar_preprocessed_data.ema()
+        radar_preprocessed_data.coords_to_angles()
         with self.lock:
             self.latest_data = radar_preprocessed_data    
 

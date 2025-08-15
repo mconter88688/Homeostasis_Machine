@@ -113,7 +113,7 @@ def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
     x1 = layers.LSTM(128, return_sequences=False)(x1)
 
     # ----- Radar branch -----
-    radar_input = Input(shape=(seq_len, 3, 4), name="radar_input")
+    radar_input = Input(shape=(seq_len, 3, 3), name="radar_input")
     x2 = layers.TimeDistributed(layers.Flatten())(radar_input)
     x2 = layers.LSTM(32, return_sequences=False)(x2)
 
