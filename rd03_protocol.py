@@ -66,10 +66,10 @@ class RadarPreprocessedData:
 @dataclass
 class RadarTarget:
     """Represents a single radar target's data"""
-    x_coord: float      # mm, positive or negative
-    y_coord: float      # mm, positive or negative
-    speed: float        # cm/s, positive or negative
-    distance: float     # mm, pixel distance value
+    x_coord: int     # mm, positive or negative
+    y_coord: int     # mm, positive or negative
+    speed: int        # cm/s, positive or negative
+    distance: int     # mm, pixel distance value
 
     def copy(self):
         targets = []
@@ -82,7 +82,6 @@ class RadarTarget:
                 distance=target.distance  
             ))
         return targets
-
 
 class RD03Protocol(Sensor):
     HEADER = bytes([0xAA, 0xFF, 0x03, 0x00])
@@ -109,7 +108,7 @@ class RD03Protocol(Sensor):
                       )
         
     
-    def _decode_raw(self, value: int) -> float:
+    def _decode_raw(self, value: int) -> int:
         """Decode a coordinate value according to the protocol specification"""
         # Check if highest bit is set (positive/negative indicator)
         is_negative = not bool(value & 0x8000)
@@ -140,7 +139,7 @@ class RD03Protocol(Sensor):
             y_coord=self._decode_raw(y_raw),
             speed=self._decode_raw(speed_raw),
             # TODO: I dont get what this does and also this should be uin16?!
-            distance=float(distance)  
+            distance=distance  
         )
         
 
