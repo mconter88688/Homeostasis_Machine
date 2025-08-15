@@ -150,13 +150,14 @@ class Menu(fsm.State):
 
 
 class TrainingModel(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params, temporal_model, name_of_model = ""):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params, temporal_model, BEST_MODEL_PATH, name_of_model = ""):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.BEST_MODEL_PATH = BEST_MODEL_PATH
         self.name_of_model = name_of_model
     
     def Enter(self):
@@ -164,11 +165,10 @@ class TrainingModel(fsm.State):
 
     def Execute(self):
         # Retrain model
-        if self.model_params.callbacks == None:
-            self.model_params.callbacks = [
-                            EarlyStopping(patience=3, restore_best_weights=True),
-                            ModelCheckpoint(cons.BEST_IMAGE_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
-                        ]
+        self.model_params.callbacks = [
+                        EarlyStopping(patience=3, restore_best_weights=True),
+                        ModelCheckpoint(self.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
+                    ]
         print(self.model_params.callbacks)
         epoch_num = int(input("Epochs: "))
         batch_num = int(input("Batch Size: "))
