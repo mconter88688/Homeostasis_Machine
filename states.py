@@ -160,7 +160,7 @@ class TrainingModel(fsm.State):
         self.name_of_model = name_of_model
     
     def Enter(self):
-        print("Saving " + self.name_of_model + " Model")
+        print("Training " + self.name_of_model + " Model")
 
     def Execute(self):
         # Retrain model
