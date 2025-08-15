@@ -288,7 +288,7 @@ class LD19(Sensor):
             if cal_CRC8(packet[0:PACKET_LENGTH-1]) != crc_check:
                 # incorrect checksum
                 #print("Incorrect checksum")
-                print("")
+                #print("")
                 continue
 
             angle_diff = (end_angle - start_angle + 360.0) % 360.0
