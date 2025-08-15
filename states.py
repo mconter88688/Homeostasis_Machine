@@ -201,9 +201,9 @@ class TrainingModel(fsm.State):
             print("Retraining model with feedback data...")
             # Create training sets
             if self.name_of_model == cons.IMAGE_NAME:
-                X = self.model_data.normal_data
+                X = np.array(self.model_data.normal_data)
             elif self.name_of_model == cons.LDRD_NAME:
-                X = [self.model_data.ld_normal_data, self.model_data.rd03_normal_data]
+                X = [np.array(self.model_data.ld_normal_data), np.array(self.model_data.rd03_normal_data)]
                 #print(X)
             else: 
                 print("Invalid model type. Returning to main menu.")
