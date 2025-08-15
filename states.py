@@ -199,7 +199,14 @@ class TrainingModel(fsm.State):
         if not self.model_data.is_empty():
             print("Retraining model with feedback data...")
             # Create training sets
-            X = np.array(self.model_data.normal_data + self.model_data.ldrd_normal_data)
+            if self.name_of_model == cons.IMAGE_NAME:
+                X = np.array(self.model_data.normal_data)
+            elif self.name_of_model == cons.LDRD_NAME:
+                X = np.array(self.model_data.ldrd_normal_data)
+            else: 
+                print("Invalid model type. Returning to main menu.")
+                self.FSM.Transition("toMenu")
+                return
             # y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             history = self.temporal_model.fit(self.model_params, X,X)
             self.temporal_model.model.save(self.MODEL_PATH)
