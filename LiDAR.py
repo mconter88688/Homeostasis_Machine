@@ -286,7 +286,9 @@ class LD19(Sensor):
             #timestamp = struct.unpack('<H', packet[PACKET_LENGTH-3: PACKET_LENGTH-1])[0]
             crc_check = packet[PACKET_LENGTH-1]
             if cal_CRC8(packet[0:PACKET_LENGTH-1]) != crc_check:
-                print("Incorrect checksum")
+                # incorrect checksum
+                #print("Incorrect checksum")
+                print("")
                 continue
 
             angle_diff = (end_angle - start_angle + 360.0) % 360.0
