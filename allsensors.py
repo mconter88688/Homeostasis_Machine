@@ -65,15 +65,15 @@ class AllSensors:
                 # for i in range(len(lidar_scan.angles)):
                 #     print(str(lidar_scan.angles[i])) # + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
                 # if not lidar_scan.mid_timestamp in self.lidar.timestamp_data:
-                print("Num points: " + str(len(lidar_scan.angle_array)))
-                print("Timestamp: " + str(lidar_scan.timestamp))
-                print(lidar_scan.angle_array[0])
-                print(lidar_scan.angle_array[-1])
+                # print("Num points: " + str(len(lidar_scan.angle_array)))
+                # print("Timestamp: " + str(lidar_scan.timestamp))
+                # print(lidar_scan.angle_array[0])
+                # print(lidar_scan.angle_array[-1])
                 #     self.lidar.timestamp_data.append(lidar_scan.mid_timestamp)
                 #     if len(lidar_scan.angles) > 506:
                 #         for i in range(len(lidar_scan.angles)):
                 #             print(str(lidar_scan.angles[i]))
-                print("****************")               
+                # print("****************")               
             else:
                 #print("no lidar readings")
                 return None
@@ -84,10 +84,11 @@ class AllSensors:
                     print("No targets found")
                     return None
                 else:
-                    for i in range(cons.RADAR_MAX_TARGETS):
+                    pass
+                    # for i in range(cons.RADAR_MAX_TARGETS):
                         #print(targets.distances[i])
-                        print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}, Angle: {targets.angles[i]}")
-                    print("******************")
+                    #     print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}, Angle: {targets.angles[i]}")
+                    # print("******************")
             except Exception as e:
                 print(f"[Radar Error] {e}")
         return AllSensorsData(lidar_data = lidar_scan, rd03_data = targets, camera_data=camera_data)
