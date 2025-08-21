@@ -106,14 +106,18 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 
 def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
     # ----- LiDAR branch -----
-    lidar_input = Input(shape=(seq_len, 500, 2), name="lidar_input")
+    
+    NUM_LD_DATA_INPUT_TYPES = 2
+    NUM_RD_DATA_INPUT_TYPES = 3
+    
+    lidar_input = Input(shape=(seq_len, cons.LD_NUM_BINS, NUM_LD_DATA_INPUT_TYPES), name="lidar_input")
     x1 = layers.TimeDistributed(layers.Conv1D(32, 3, activation="relu"))(lidar_input)
     x1 = layers.TimeDistributed(layers.MaxPooling1D(2))(x1)
     x1 = layers.TimeDistributed(layers.Flatten())(x1)
     x1 = layers.LSTM(128, return_sequences=False)(x1)
 
     # ----- Radar branch -----
-    radar_input = Input(shape=(seq_len, 3, 3), name="radar_input")
+    radar_input = Input(shape=(seq_len, cons.RADAR_MAX_TARGETS, NUM_RD_DATA_INPUT_TYPES), name="radar_input")
     x2 = layers.TimeDistributed(layers.Flatten())(radar_input)
     x2 = layers.LSTM(32, return_sequences=False)(x2)
 
@@ -123,12 +127,12 @@ def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
 
     # ----- Decoder -----
     # LiDAR reconstruction
-    lidar_dec = layers.Dense(500*2*seq_len, activation="linear")(encoded)
-    lidar_dec = layers.Reshape((seq_len, 500, 2))(lidar_dec)
+    lidar_dec = layers.Dense(cons.LD_NUM_BINS*NUM_LD_DATA_INPUT_TYPES*seq_len, activation="linear")(encoded)
+    lidar_dec = layers.Reshape((seq_len, cons.LD_NUM_BINS, NUM_LD_DATA_INPUT_TYPES))(lidar_dec)
 
     # Radar reconstruction
-    radar_dec = layers.Dense(3*3*seq_len, activation="linear")(encoded)
-    radar_dec = layers.Reshape((seq_len, 3, 3))(radar_dec)
+    radar_dec = layers.Dense(cons.RADAR_MAX_TARGETS*NUM_RD_DATA_INPUT_TYPES*seq_len, activation="linear")(encoded)
+    radar_dec = layers.Reshape((seq_len, cons.RADAR_MAX_TARGETS, NUM_RD_DATA_INPUT_TYPES))(radar_dec)
 
     # ----- Model -----
     autoencoder = Model(inputs=[lidar_input, radar_input],

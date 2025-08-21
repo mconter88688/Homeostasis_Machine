@@ -28,26 +28,25 @@ POINTS = 12
 PACKET_LENGTH = 47
 MAX_MEAS_RADIUS = 12000.0
 MIN_MEAS_RADIUS = 20.0
-NUM_BINS = 500
 MEDIAN_FILTER_KERNEL_SIZE = 6
-LIDAR_EMA_ALPHA = 0.4
+LIDAR_EMA_ALPHA = 0.6
 MAX_INTENSITY = 255.0
 
 
 
 
 class LiDARPreprocessedData:
-    def __init__(self, num_data_points = NUM_BINS):
+    def __init__(self, num_data_points = cons.LD_NUM_BINS):
         self.num_data_points = num_data_points # never rewritten
         angle_edges = np.linspace(0, 360, self.num_data_points+1)
         self.angle_array = (angle_edges[:-1] + angle_edges[1:]) / 2 # never rewritten
-        self.distance_array = np.zeros(NUM_BINS) # rewritten in bin_lidar_data
-        self.intensity_array = np.zeros(NUM_BINS) # rewritten in bin_lidar_data
+        self.distance_array = np.zeros(cons.LD_NUM_BINS) # rewritten in bin_lidar_data
+        self.intensity_array = np.zeros(cons.LD_NUM_BINS) # rewritten in bin_lidar_data
         self.speed = None 
         self.timestamp = None
         self.are_there_prev_vals = False # rewritten in ema
-        self.prev_distance = np.zeros(NUM_BINS) # rewritten  in ema
-        self.prev_intensity = np.zeros(NUM_BINS) # rewritten in ema
+        self.prev_distance = np.zeros(cons.LD_NUM_BINS) # rewritten  in ema
+        self.prev_intensity = np.zeros(cons.LD_NUM_BINS) # rewritten in ema
 
     def circular_median_filter(self, kernel_size = MEDIAN_FILTER_KERNEL_SIZE):
         half_kernel = kernel_size // 2
