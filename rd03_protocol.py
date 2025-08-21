@@ -6,7 +6,6 @@ from sensor import Sensor
 import numpy as np
 from dsp import ema, within_radius
 from time import monotonic_ns
-import math
 
 RADAR_EMA_ALPHA = 0.6
 RADAR_MAX_RANGE = 8000.0
@@ -62,11 +61,15 @@ class RadarPreprocessedData:
         self.y_coords[:] = ema(self.prev_y_coords, self.y_coords, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
         self.speeds[:] = ema(self.prev_speeds, self.speeds, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
         self.distances[:] = ema(self.prev_distances, self.distances, self.are_there_prev_vals, alpha = RADAR_EMA_ALPHA)
+        
+        self.prev_x_coords[:] = self.x_coords.copy()
+        self.prev_y_coords[:] = self.y_coords.copy()
+        self.prev_speeds[:]   = self.speeds.copy()
+        self.prev_distances[:]= self.distances.copy()
         self.are_there_prev_vals = True
         
     def coords_to_angles(self):
-        for i in range(len(self.y_coords)):
-            self.angles[i] = math.atan2(self.y_coords[i], self.x_coords[i])
+        self.angles[:] = np.arctan2(self.y_coords, self.x_coords)
 
 
 
@@ -79,17 +82,7 @@ class RadarTarget:
     speed: int        # cm/s, positive or negative
     distance: int     # mm, pixel distance value
 
-    def copy(self):
-        targets = []
-        for target in self.latest_data:
-            #print("scan found target")
-            targets.append(RadarTarget(
-                x_coord=target.x_coord,
-                y_coord=target.y_coord,
-                speed=target.speed,
-                distance=target.distance  
-            ))
-        return targets
+
 
 class RD03Protocol(Sensor):
     HEADER = bytes([0xAA, 0xFF, 0x03, 0x00])
