@@ -1,7 +1,7 @@
 import numpy as np
 
 FEATURE_DIM = 1280
-SEQ_LEN = 20                # number of frames in sequence window
+SEQ_LEN = 10                # number of frames in sequence window
 IMAGE_MODEL_PATH = "homeostasis_image_model.h5"
 LDRD_MODEL_PATH = "homeostatis_ldrd_model.h5"
 BEST_IMAGE_MODEL_PATH = "best_image_model.h5"
