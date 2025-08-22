@@ -1,6 +1,6 @@
 import serial
 from dataclasses import dataclass
-from typing import Optional
+from typing import List
 import constants as cons
 from sensor import Sensor
 import numpy as np
@@ -117,15 +117,15 @@ class RD03Protocol(Sensor):
         abs_value = value & 0x7FFF
         return -abs_value if is_negative else abs_value
 
-    def dsp_and_send_scan(self, radar_target:RadarTarget, radar_preprocessed_data: RadarPreprocessedData):
+    def dsp_and_send_scan(self, radar_target:List[RadarTarget], radar_preprocessed_data: RadarPreprocessedData):
         radar_preprocessed_data.update_for_new_target_data(radar_target)
         radar_preprocessed_data.ema()
         radar_preprocessed_data.coords_to_angles()
         with self.lock:
-            self.latest_data = radar_preprocessed_data    
+            self.latest_data = radar_preprocessed_data.copy()    
 
     
-    def _parse_target_data(self, data: bytes) -> Optional[RadarTarget]:
+    def _parse_target_data(self, data: bytes) -> RadarTarget:
         """Parse 8 bytes of target data into a RadarTarget object"""
         # if all(b == 0 for b in data):  # Check if target data is all zeros
         #     return None
@@ -134,7 +134,7 @@ class RD03Protocol(Sensor):
         x_raw = int.from_bytes(data[0:2], byteorder='little')
         y_raw = int.from_bytes(data[2:4], byteorder='little')
         speed_raw = int.from_bytes(data[4:6], byteorder='little')
-        distance = int.from_bytes(data[6:8], byteorder='little')
+        distance = int.from_bytes(data[6:8], byteorder='little', signed=False)
 
         return RadarTarget(
             x_coord=self._decode_raw(x_raw),
@@ -156,7 +156,7 @@ class RD03Protocol(Sensor):
         while self.running:
             within_distance = True
             if self.serial.in_waiting:
-                byte = ord(self.serial.read())
+                byte = self.serial.read(1)[0]
                 #print(hex(byte))
                 #print("read rd03d serial")
                 
