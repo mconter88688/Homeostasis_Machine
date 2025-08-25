@@ -87,8 +87,7 @@ class WipingModelAndFeedback(fsm.State):
         print("Feedback and model successfully removed!")
         self.FSM.Transition("toMenu")
         return
-    def Exit(self):
-        pass
+    
         
     
 
@@ -144,8 +143,8 @@ class Menu(fsm.State):
         else:
             print("Invalid input. Try again.")
 
-    def Exit(self):
-        pass
+
+        
 
 
 
@@ -266,8 +265,6 @@ class TrainingModel(fsm.State):
         self.FSM.Transition("toMenu")
         return
 
-    def Exit(self):
-        pass
 
 
 class LoadModel(fsm.State):
@@ -307,10 +304,8 @@ class LoadModel(fsm.State):
                 print("Model does not exist. Try again")
         self.FSM.Transition("toMenu")
 
-    def Exit(self):
-        pass
 
-## TODO: Finish document feedback
+
 class DocumentFeedback(fsm.State):
     def __init__(self, FSM, model_params_list, model_data):
         self.FSM = FSM
@@ -347,8 +342,6 @@ class DocumentFeedback(fsm.State):
         self.FSM.Transition("toMenu")
         pass
 
-    def Exit(self):
-        pass
 
 
 class DocumentModel(fsm.State):
@@ -399,6 +392,43 @@ class DocumentModel(fsm.State):
     def Exit(self):
         print("Model Saved!")
 
+class TestingModel(fsm.State):
+    def __init__(self, FSM, temporal_model, ldrd_temporal_model, model_data):
+        self.FSM = FSM
+        self.temporal_model = temporal_model
+        self.ldrd_temporal_model = ldrd_temporal_model
+        self.model_data = model_data
+
+    def Enter(self):
+        print("Training " + self.name_of_model + " Model")
+
+    def Execute(self):
+        answer = input("Would you like to load a saved data file?").strip().upper()
+        if answer == "Y":
+            print("Available data folders:")
+            for folder in os.listdir(cons.DATA_FOLDER):
+                print("-", folder)
+            if not os.listdir(cons.DATA_FOLDER):
+                print("DATA_FOLDER is empty.")
+            else:
+                good_data = False
+                while not good_data:
+                    answer = input("Select data to load: ")
+                    if answer in os.listdir(cons.DATA_FOLDER):
+                        good_data = True
+                        data_path = os.path.join(os.getcwd(), cons.DATA_FOLDER, answer, answer + ".pkl")
+                        self.model_data.load_data(data_path)
+                    elif answer.upper() == "Q":
+                        break
+                    else:
+                        print("Data file does not exist. Try again")
+            
+        # Save feedback into file
+        self.model_data.save_data(self.FEEDBACK_FILE)
+        image_X = np.array(self.model_data.normal_data)
+        ldrd_X = [np.array(self.model_data.ld_normal_data), np.array(self.model_data.rd03_normal_data)]
+        image_predictions = self.temporal_model.predict(image_X)
+        ldrd_predictions = self.ldrd_temporal_model.predict(ldrd_X)
 
 class RLHF(fsm.State):
     def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):

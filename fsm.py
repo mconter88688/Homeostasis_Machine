@@ -12,7 +12,14 @@ class Transition:
 
 ## States ##
 class State:
-    pass
+    def Enter(self):
+        pass
+
+    def Execute(self):
+        pass
+    
+    def Exit(self):
+        pass
 
 
 ## Finite State Machine ##
