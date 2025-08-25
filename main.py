@@ -111,6 +111,11 @@ if not os.path.exists(data_folder_path):
     os.makedirs(data_folder_path)
 print("Feedback folder exists!")
 
+testing_graphs_path = os.path.join(os.getcwd(), cons.TESTING_GRAPHS_FOLDER)
+if not os.path.exists(testing_graphs_path):
+    os.makedirs(testing_graphs_path)
+print("Testing plots folder exists!")
+
 allsensors = AllSensors()
 allsensors.start()
 
@@ -129,6 +134,7 @@ hs_model.FSM.states["LoadImageModel"] = states.LoadModel(hs_model.FSM, image_mod
 hs_model.FSM.states["LoadLDRDModel"] = states.LoadModel(hs_model.FSM, ldrd_model_params, ldrd_autoencoder, cons.LDRD_MODEL_FOLDER, cons.LDRD_NAME)
 hs_model.FSM.states["DocumentFeedback"] = states.DocumentFeedback(hs_model.FSM, [image_model_params, ldrd_model_params], model_data)
 hs_model.FSM.states["End"] = states.End(hs_model.FSM, model_data, allsensors)
+hs_model.FSM.states["TestingModel"] = states.TestingModel(hs_model.FSM, image_autoencoder, ldrd_autoencoder, model_data)
 hs_model.FSM.transitions["toMenu"] = fsm.Transition("Menu")
 hs_model.FSM.transitions["toNormalDataTraining"] = fsm.Transition("NormalDataTraining")
 hs_model.FSM.transitions["toRLHF"] = fsm.Transition("RLHF")
@@ -141,6 +147,7 @@ hs_model.FSM.transitions["toLoadImageModel"] = fsm.Transition("LoadImageModel")
 hs_model.FSM.transitions["toLoadLDRDModel"] = fsm.Transition("LoadLDRDModel")
 hs_model.FSM.transitions["toDocumentFeedback"] = fsm.Transition("DocumentFeedback")
 hs_model.FSM.transitions["toEnd"] = fsm.Transition("End")
+hs_model.FSM.transitions["toTestingModel"] = fsm.Transition("TestingModel")
 
 initial_free = get_free_space_gb(cons.MOUNT_POINT_FOR_STORAGE)
 print(f"Starting with {initial_free} GiB free")

@@ -259,14 +259,17 @@ class LDRD03Autoencoder(HomeostasisModel):
         if not self.are_buffers_long_enough():
             return None
         else:
-            seq = [np.expand_dims(np.stack(self.lidar_buffer), axis=0), np.expand_dims(np.stack(self.radar_buffer), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
-            # Get reconstruction from model
-            reconstruction = self.model.predict(seq) 
+            return self.predict(self.lidar_buffer, self.radar_buffer)
+        
+    def predict(self, lidar_data, radar_data):
+        seq = [np.expand_dims(np.stack(lidar_data), axis=0), np.expand_dims(np.stack(self.radar_data), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
+        # Get reconstruction from model
+        reconstruction = self.model.predict(seq) 
 
-            # Compute per-timestep MSE
-            errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  
+        # Compute per-timestep MSE
+        errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  
 
-            return np.mean(errors)
+        return np.mean(errors)
         
 
     
@@ -336,16 +339,17 @@ class ImageAutoencoder(HomeostasisModel):
         if not self.is_buffer_long_enough():
             return None
         else:
-            seq = np.expand_dims(np.stack(self.buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
-            # Get reconstruction from model
-            reconstruction = self.model.predict(seq)  # shape: (1, 20, 1536)
-
-            # Compute per-timestep MSE
-            errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  # shape: (20,)
-
-            return np.mean(errors)
+            return self.predict(self.buffer)
         
-        
+    def predict(self, image_buffer):
+        seq = np.expand_dims(np.stack(image_buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
+        # Get reconstruction from model
+        reconstruction = self.model.predict(seq)  # shape: (1, 20, 1536)
+
+        # Compute per-timestep MSE
+        errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  # shape: (20,)
+
+        return np.mean(errors)     
     
 
     

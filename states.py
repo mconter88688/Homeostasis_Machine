@@ -100,7 +100,8 @@ class Menu(fsm.State):
         print("**Select from the following:**")
         print("Wipe Model and Feedback:...........................W")
         print("Retrain Model:.....................................R")
-        print("Take in Normal Training Data:......................N")
+        print("Take in Training Data:.............................N")
+        print("Test Your Data.....................................T")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
         print("Document Your Currently Loaded Data................D")
@@ -122,6 +123,8 @@ class Menu(fsm.State):
                 print("Invalid Input")
         elif answer == "N":
             self.FSM.Transition("toNormalDataTraining")
+        elif answer == "T":
+            self.FSM.Transition("toTestingModel")
         elif answer == "F":
             self.FSM.Transition("toRLHF")
         elif answer == "M":
@@ -425,10 +428,62 @@ class TestingModel(fsm.State):
             
         # Save feedback into file
         self.model_data.save_data(self.FEEDBACK_FILE)
-        image_X = np.array(self.model_data.normal_data)
-        ldrd_X = [np.array(self.model_data.ld_normal_data), np.array(self.model_data.rd03_normal_data)]
-        image_predictions = self.temporal_model.predict(image_X)
-        ldrd_predictions = self.ldrd_temporal_model.predict(ldrd_X)
+        
+        test_data_length = len(self.model_data.normal_data)
+        ldrd_predictions = np.zeros(test_data_length)
+        image_predictions = np.zeros(test_data_length)
+        for i in range(test_data_length):
+            image_predictions[i] = self.temporal_model.predict(self.model_data.normal_data[i])
+            ldrd_predictions[i] = self.ldrd_temporal_model.predict(self.model_data.ld_normal_data[i], self.model_data.rd03_normal_data[i])
+        total_predictions = ldrd_predictions + image_predictions
+        data = [total_predictions, image_predictions, ldrd_predictions]
+        labels = ["Weighted Average Reconstruction Error", 
+                  "Image Autoencoder Average Reconstruction Error", 
+                  "LiDAR and MMWave Autoencoder Average Reconstruction Error"]
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        # Box and whisker plots
+        box = ax.boxplot(data, patch_artist=True, labels=labels)
+
+        # Add text under each box with actual numbers
+        for i, preds in enumerate(data, start=1):
+            text = ", ".join(f"{p:.2f}" for p in preds)
+            ax.text(i, min(preds) - 0.05, text, ha="center", va="top", fontsize=9, rotation=30)
+
+        # Adjust plot so text isn’t cut off
+        plt.subplots_adjust(bottom=0.3)
+
+        # Axis labels
+        ax.set_ylabel("Average Reconstruction Error")
+        answer = input("Name of Graph: ")
+        ax.set_title(answer)
+
+        plt.tight_layout()
+
+        graph_path = os.path.join(os.getcwd(), "temp_testing_plot.png")
+        plt.savefig(graph_path)
+
+        img = cv2.imread(graph_path)
+        if img is not None:
+            cv2.imshow("Graph", img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        answer = input("Would you like to save the plot? (Y/N)").strip().upper()
+        if answer == "Y":
+            if os.path.exists(graph_path):
+                name_of_graph = input("Name of plot: ")
+                graph_target = os.path.join(cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".png")
+                os.rename(graph_path, graph_target)
+                print("Plot saved!")
+            else:
+                print("Something went wrong, plot was not saved.")
+        else:
+            print("You did not request  the plot to be saved. Going to menu...")
+        self.FSM.Transition("toMenu")
+
+
 
 class RLHF(fsm.State):
     def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
