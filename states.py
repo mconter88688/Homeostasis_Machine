@@ -396,11 +396,12 @@ class DocumentModel(fsm.State):
         print("Model Saved!")
 
 class TestingModel(fsm.State):
-    def __init__(self, FSM, temporal_model, ldrd_temporal_model, model_data):
+    def __init__(self, FSM, temporal_model, ldrd_temporal_model, model_data, FEEDBACK_FILE):
         self.FSM = FSM
         self.temporal_model = temporal_model
         self.ldrd_temporal_model = ldrd_temporal_model
         self.model_data = model_data
+        self.FEEDBACK_FILE = FEEDBACK_FILE
 
     def Enter(self):
         print("Model Testing")
