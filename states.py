@@ -441,9 +441,9 @@ class TestingModel(fsm.State):
             ldrd_predictions[i] = self.ldrd_temporal_model.predict(self.model_data.ld_normal_data[i], self.model_data.rd03_normal_data[i])
         total_predictions = ldrd_predictions + image_predictions
         data = [total_predictions, image_predictions, ldrd_predictions]
-        labels = ["Weighted Average Reconstruction Error", 
-                  "Image Autoencoder Average Reconstruction Error", 
-                  "LiDAR and MMWave Autoencoder Average Reconstruction Error"]
+        labels = ["Weighted Average\nReconstruction\nError",
+                    "Image Autoencoder\nAverage Reconstruction\nError",
+                    "LiDAR and MMWave\nAutoencoder Average Reconstruction\nError"]
         
         
         fig = plt.figure(figsize=(12, 8))
@@ -484,6 +484,7 @@ class TestingModel(fsm.State):
             ax.margins(y=0.2)
 
         # ---- Global title ----
+        answer = input("Name of Graph: ")
         fig.suptitle(answer, fontsize=16)
 
         plt.tight_layout(rect=[0, 0, 1, 0.96]) 
