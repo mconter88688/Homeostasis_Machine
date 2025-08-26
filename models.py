@@ -10,6 +10,11 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, Ba
 from tensorflow.keras.optimizers import Adam
 from collections import deque # for sliding window
 
+############## FUSION ##########################
+
+def late_fusion(pred_image, pred_ldrd):
+    return cons.IMAGE_COEFF*pred_image + (1-cons.IMAGE_COEFF)*pred_ldrd
+
 ############## MODELS ###########################
 
 def build_simple_7_17():

@@ -439,7 +439,7 @@ class TestingModel(fsm.State):
         for i in range(test_data_length):
             image_predictions[i] = self.temporal_model.predict(self.model_data.normal_data[i])
             ldrd_predictions[i] = self.ldrd_temporal_model.predict(self.model_data.ld_normal_data[i], self.model_data.rd03_normal_data[i])
-        total_predictions = ldrd_predictions + image_predictions
+        total_predictions = mod.late_fusion(image_predictions, ldrd_predictions)
         data = [total_predictions, image_predictions, ldrd_predictions]
         labels = ["Weighted Average\nReconstruction\nError",
                     "Image Autoencoder\nAverage Reconstruction\nError",
@@ -553,7 +553,7 @@ class RLHF(fsm.State):
                 pred_ldrd = self.ldrd_temporal_model.model_prediction()  
 
         if pred_image and pred_ldrd:
-            pred = cons.IMAGE_COEFF*pred_image + (1-cons.IMAGE_COEFF)*pred_ldrd
+            pred = mod.late_fusion(pred_image, pred_ldrd)
         elif pred_image:
             pred = pred_image
         elif pred_ldrd:
