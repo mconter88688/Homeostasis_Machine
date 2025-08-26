@@ -77,17 +77,24 @@ class WipingModelAndFeedback(fsm.State):
         print("Deleting model and feedback data")
     
     def Execute(self):
-        self.model_data.clear_data()
         
-        # Clear Feedback Data
-        with open(self.FEEDBACK_FILE, "wb") as f:
-            pass
-
-        if os.path.exists(self.IMAGE_MODEL_PATH):
-            os.remove(self.IMAGE_MODEL_PATH)
-        if os.path.exists(self.LDRD_MODEL_PATH):
-             os.remove(self.LDRD_MODEL_PATH)
-        print("Feedback and model successfully removed!")
+        answer = input("Would you like to wipe the currently loaded data? (Y/N)").strip().upper()
+        if answer == "Y":
+            self.model_data.clear_data()
+            
+            # Clear Feedback Data
+            with open(self.FEEDBACK_FILE, "wb") as f:
+                pass
+            print("Data successfully wiped!")
+        
+        answer = input("Would you like to wipe currently loaded models? (Y/N)").strip().upper()
+        if answer == "Y":
+            if os.path.exists(self.IMAGE_MODEL_PATH):
+                os.remove(self.IMAGE_MODEL_PATH)
+            if os.path.exists(self.LDRD_MODEL_PATH):
+                os.remove(self.LDRD_MODEL_PATH)
+            print("Models successfully removed!")
+        print("Returning to Menu...")
         self.FSM.Transition("toMenu")
         return
     
