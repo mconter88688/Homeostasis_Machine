@@ -10,11 +10,13 @@ from tensorflow.keras.models import load_model # for model architecture and load
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import models as mod
 import sys
 sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 import pandas as pd
+
 
 class NormalDataTraining(fsm.State):
     def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
