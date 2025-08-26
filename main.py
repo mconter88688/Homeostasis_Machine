@@ -6,25 +6,11 @@ os.environ["LD_PRELOAD"] = "/usr/lib/aarch64-linux-gnu/libgomp.so.1:/usr/lib/aar
 ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 ctypes.CDLL("libatomic.so.1", mode=ctypes.RTLD_GLOBAL)
 
-# import numpy
-# import cv2
-# import tensorflow as tf # for TensorFlow
-# import tensorflow_hub as hub # loads pre-trained feature extraction model from the Hub
-# from tensorflow.keras import layers, models
-# from tensorflow.keras.models import Sequential, Model, load_model # for model architecture and loading
-# from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, BatchNormalization, Bidirectional, Input, ConvLSTM2D, Conv3DTranspose # for neural network layers
-# from tensorflow.keras.optimizers import Adam
-# from collections import deque # for sliding window
 import fsm as fsm
-# import pickle
 import constants as cons
 import models as mod
-#from sklearn.model_selection import train_test_split
-# import camera as cam
-# import LiDAR as ld
 import states
-# from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
-from allsensors import AllSensors, AllSensorsData
+from allsensors import AllSensors
 from disk_storage import get_free_space_gb, is_there_still_space_for_data_collection_and_transfer
 import subprocess
 import data
