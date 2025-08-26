@@ -14,6 +14,7 @@ import models as mod
 import sys
 sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
+import pandas as pd
 
 class NormalDataTraining(fsm.State):
     def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
@@ -442,25 +443,36 @@ class TestingModel(fsm.State):
                   "Image Autoencoder Average Reconstruction Error", 
                   "LiDAR and MMWave Autoencoder Average Reconstruction Error"]
         
-        fig, ax = plt.subplots(figsize=(8, 6))
+        
+        fig, axes = plt.subplots(3, 1, figsize=(6, 9), sharex=False)
 
-        # Box and whisker plots
-        box = ax.boxplot(data, patch_artist=True, labels=labels)
+        for ax, preds, label in zip(axes, data, labels):
+            ax.boxplot(preds, patch_artist=True, labels=[label])
+            ax.set_ylabel("Average Reconstruction Error")
 
-        # Add text under each box with actual numbers
-        for i, preds in enumerate(data, start=1):
-            text = ", ".join(f"{p:.2f}" for p in preds)
-            ax.text(i, min(preds) - 0.05, text, ha="center", va="top", fontsize=9, rotation=30)
+            q1 = np.percentile(preds, 25)
+            median = np.percentile(preds, 50)
+            q3 = np.percentile(preds, 75)
+            min_val = preds.min()
+            max_val = preds.max()
 
-        # Adjust plot so text isn’t cut off
-        plt.subplots_adjust(bottom=0.3)
+            stats_text = (
+                f"Min={min_val:.3f}, Q1={q1:.3f}, "
+                f"Median={median:.3f}, Q3={q3:.3f}, Max={max_val:.3f}"
+            )
 
-        # Axis labels
-        ax.set_ylabel("Average Reconstruction Error")
+            # Place stats under each box
+            ax.text(1, ax.get_ylim()[0] - 0.05*(ax.get_ylim()[1]-ax.get_ylim()[0]),
+                    stats_text, ha="center", va="top", fontsize=9)
+
+                    # Add some padding so text isn't cut off
+            ax.margins(y=0.2)
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=0.2)  # make room for numbers
         answer = input("Name of Graph: ")
         ax.set_title(answer)
 
-        plt.tight_layout()
 
         graph_path = os.path.join(os.getcwd(), "temp_testing_plot.png")
         plt.savefig(graph_path)
@@ -471,13 +483,20 @@ class TestingModel(fsm.State):
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
-        answer = input("Would you like to save the plot? (Y/N)").strip().upper()
+        answer = input("Would you like to save the plot and data? (Y/N)").strip().upper()
         if answer == "Y":
             if os.path.exists(graph_path):
                 name_of_graph = input("Name of plot: ")
-                graph_target = os.path.join(cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".png")
+                graph_target = os.path.join(os.get_cwd(), cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".png")
                 os.rename(graph_path, graph_target)
-                print("Plot saved!")
+                df = pd.DataFrame({
+                    "Total": total_predictions,
+                    "Image": image_predictions,
+                    "LDRD": ldrd_predictions
+                })
+                csv_target = os.path.join(os.getcwd(), cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".csv")
+                df.to_csv(csv_target, index=False)
+                print("Plot and data saved!")
             else:
                 print("Something went wrong, plot was not saved.")
         else:
