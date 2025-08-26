@@ -1,10 +1,9 @@
 import LiDAR as ld
 import rd03_protocol as rd
 import camera as cam
-from typing import Optional, List
+from typing import Optional
 from dataclasses import dataclass
-import constants as cons
-#from time import sleep
+
 
 
 
