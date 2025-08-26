@@ -262,7 +262,7 @@ class LDRD03Autoencoder(HomeostasisModel):
             return self.predict(self.lidar_buffer, self.radar_buffer)
         
     def predict(self, lidar_data, radar_data):
-        seq = [np.expand_dims(np.stack(lidar_data), axis=0), np.expand_dims(np.stack(self.radar_data), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
+        seq = [np.expand_dims(np.stack(lidar_data), axis=0), np.expand_dims(np.stack(radar_data), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
         # Get reconstruction from model
         reconstruction = self.model.predict(seq) 
 
