@@ -446,12 +446,22 @@ class TestingModel(fsm.State):
                   "LiDAR and MMWave Autoencoder Average Reconstruction Error"]
         
         
-        fig, axes = plt.subplots(3, 1, figsize=(6, 9), sharex=False)
+        fig = plt.figure(figsize=(12, 8))
+        gs = GridSpec(3, 2, width_ratios=[1.5, 1])  # left column wider
 
-        for ax, preds, label in zip(axes, data, labels):
+        # ---- Left panel: combined view ----
+        ax_left = fig.add_subplot(gs[:, 0])  # span all rows
+        ax_left.boxplot(data, patch_artist=True, labels=labels)
+        ax_left.set_ylabel("Average Reconstruction Error")
+        ax_left.set_title("All Predictions Together")
+
+        # ---- Right panel: 3 separate boxplots ----
+        for i, (preds, label) in enumerate(zip(data, labels)):
+            ax = fig.add_subplot(gs[i, 1])  # one subplot per row
             ax.boxplot(preds, patch_artist=True, labels=[label])
             ax.set_ylabel("Average Reconstruction Error")
 
+            # Compute summary stats
             q1 = np.percentile(preds, 25)
             median = np.percentile(preds, 50)
             q3 = np.percentile(preds, 75)
@@ -464,17 +474,19 @@ class TestingModel(fsm.State):
             )
 
             # Place stats under each box
-            ax.text(1, ax.get_ylim()[0] - 0.05*(ax.get_ylim()[1]-ax.get_ylim()[0]),
-                    stats_text, ha="center", va="top", fontsize=9)
+            ax.text(
+                1,
+                ax.get_ylim()[0] - 0.05*(ax.get_ylim()[1]-ax.get_ylim()[0]),
+                stats_text,
+                ha="center", va="top", fontsize=8
+            )
 
-                    # Add some padding so text isn't cut off
             ax.margins(y=0.2)
 
-        plt.tight_layout()
-        plt.subplots_adjust(bottom=0.2)  # make room for numbers
-        answer = input("Name of Graph: ")
-        ax.set_title(answer)
+        # ---- Global title ----
+        fig.suptitle(answer, fontsize=16)
 
+        plt.tight_layout(rect=[0, 0, 1, 0.96]) 
 
         graph_path = os.path.join(os.getcwd(), "temp_testing_plot.png")
         plt.savefig(graph_path)
