@@ -1,6 +1,4 @@
 import fsm
-from time import sleep
-import LiDAR as ld
 import constants as cons
 import numpy as np # for arrays
 import cv2 # for camera
@@ -14,7 +12,6 @@ from matplotlib.gridspec import GridSpec
 import models as mod
 import sys
 sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
-from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
 import pandas as pd
 
 
