@@ -403,7 +403,7 @@ class TestingModel(fsm.State):
         self.model_data = model_data
 
     def Enter(self):
-        print("Training " + self.name_of_model + " Model")
+        print("Model Testing")
 
     def Execute(self):
         answer = input("Would you like to load a saved data file?").strip().upper()
