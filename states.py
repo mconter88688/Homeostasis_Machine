@@ -502,7 +502,7 @@ class TestingModel(fsm.State):
         if answer == "Y":
             if os.path.exists(graph_path):
                 name_of_graph = input("Name of plot: ")
-                graph_target = os.path.join(os.get_cwd(), cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".png")
+                graph_target = os.path.join(os.getcwd(), cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".png")
                 os.rename(graph_path, graph_target)
                 df = pd.DataFrame({
                     "Total": total_predictions,
