@@ -22,7 +22,7 @@ image_autoencoder.feature_extractor_setup()
 
 ldrd_autoencoder = mod.LDRD03Autoencoder()
 
-model_data = data.Data()
+model_data = data.DataCollection()
 model_data.load_data(cons.FEEDBACK_FILE)
 print("Feedback file loaded")
 

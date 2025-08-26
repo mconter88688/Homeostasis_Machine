@@ -3,7 +3,7 @@ import os
 
 
 
-class Data:
+class DataCollection:
     def __init__(self):
         self.normal_data = []
         self.ld_normal_data = []
