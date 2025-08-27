@@ -7,6 +7,7 @@ skinparam shadowing false
 skinparam classArrowColor Black
 skinparam classStyle rectangle
 hide circle
+scale 0.5
 
 
 
@@ -202,6 +203,229 @@ class ImageAutoencoder {
   +predict(): Float
 }
 
+class RadarPreprocessedData {
+    +x_coords: ndarray
+    +y_coords: ndarray
+    +speeds: ndarray
+    +distances: ndarray
+    +timestamp: Integer [0..1]
+    +are_there_prev_vals: Boolean
+    +prev_x_coords: ndarray
+    +prev_y_coords: ndarray
+    +prev_speeds: ndarray
+    +prev_distances: ndarray
+    +angles: ndarray
+
+    +update_for_new_target_data()
+    +class_to_single_normalized_numpy_array(): ndarray
+    +copy(): RadarPreprocessedData
+    +ema()
+    +coords_to_angles()
+}
+
+class RadarTarget {
+    +x_coord: Integer
+    +y_coord: Integer
+    +speed: Integer
+    +distance: Integer
+}
+
+class RD03Protocol {
+    +HEADER: bytes
+    +FOOTER: bytes
+    +TARGET_DATA_SIZE: Integer
+    +WAITING_HEADER: Integer
+    +READING_DATA: Integer
+    +WAITING_FOOTER: Integer
+    +TRACE_LENGTH: Integer
+
+    +start()
+    +_decode_raw(): Integer
+    +dsp_and_send_scan()
+    +_parse_target_data(): RadarTarget
+    +_reader_thread()
+}
+
+abstract class Sensor {
+    +name: String
+    +serial: Serial [0..1]
+    +baudrate: Integer
+    +port: String
+    +thread: Thread [0..1]
+    +running: Boolean
+    +lock: Lock
+    +latest_data: Object [0..1]
+    +timestamp_data: List<Float>
+
+    
+    + start()
+    + stop()
+    + get_scan(): Object [0..1]
+}
+
+class NormalDataTraining {
+    - FSM: FSM
+    - num_frames: Integer
+    - model_data: DataCollection
+    - allsensors: AllSensors
+    - temporal_model: ImageAutoencoder
+    - ldrd_temporal_model: LDRD03Autoencoder
+
+    + Enter()
+    + Execute()
+    + Exit()
+}
+
+'NormalDataTraining Aggregation
+FSM "1" --o "1" NormalDataTraining : has <
+DataCollection "1" --o "1" NormalDataTraining : has <
+AllSensors "1" --o "1" NormalDataTraining : has <
+ImageAutoencoder "1" --o "1" NormalDataTraining : has <
+LDRD03Autoencoder "1" --o "1" NormalDataTraining : has <
+
+
+class WipingModelAndFeedback {
+  -FEEDBACK_FILE: String
+  -IMAGE_MODEL_PATH: String
+  -LDRD_MODEL_PATH: String
+  -FSM: FSM
+  -model_data: DataCollection
+  
+  +Enter()
+  +Execute()
+}
+
+'WipingModelAndFeedback Aggregation
+FSM "1" --o "1" WipingModelAndFeedback : has <
+DataCollection "1" --o "1" WipingModelAndFeedback : has <
+
+
+class Menu {
+  -FSM: FSM
+
+  +Enter()
+  +Execute()
+}
+
+'Menu Aggregation
+FSM "1" --o "1" Menu : has <
+
+
+class TrainingModel {
+    -FEEDBACK_FILE: String
+    -MODEL_PATH: String
+    -FSM: FSM
+    -model_data: DataCollection
+    -model_params: ModelConfigParam
+    -temporal_model: HomeostasisModel
+    -BEST_MODEL_PATH: String
+    -name_of_model: String
+
+    +Enter()
+    +Execute()
+}
+
+'TrainingModel Aggregation
+FSM "1" --o "1" TrainingModel : has <
+DataCollection "1" --o "1" TrainingModel : has <
+ModelConfigParam  "1" --o "1" TrainingModel : has <
+HomeostasisModel  "1" --o "1" TrainingModel : has <
+
+class LoadModel {
+    -FSM: FSM
+    -model_params: ModelConfigParam
+    -temporal_model: HomeostasisModel
+    -MODEL_FOLDER: String
+    -name_of_model: String
+
+    +Enter()
+    +Execute()
+}
+
+'LoadModel Aggregation
+FSM "1" --o "1" LoadModel : has <
+ModelConfigParam "1" --o "1" LoadModel : has <
+HomeostasisModel "1" --o "1" LoadModel : has <
+
+class DocumentFeedback {
+    -FSM: FSM
+    -model_params_list: List<ModelConfigParam>
+    -model_data: DataCollection
+    +Enter()
+    +Execute()
+}
+
+'DocumentFeedback Aggregation
+FSM "1" --o "1" DocumentFeedback : has <
+ModelConfigParam "1" --o "1" DocumentFeedback : has <
+DataCollection "1" --o "1" DocumentFeedback : has <
+
+
+class DocumentModel {
+    -FSM: FSM
+    -model_params: ModelConfigParam
+    -temporal_model: HomeostasisModel
+    -MODEL_FOLDER: String
+    -name_of_model: String
+    +Enter()
+    +Execute()
+    +Exit()
+}
+
+'DocumentModel Aggregation
+FSM "1" --o "1" DocumentModel : has <
+ModelConfigParam "1" --o "1" DocumentModel : has <
+HomeostasisModel "1" --o "1" DocumentModel : has <
+
+class TestingModel {
+    -FSM: FSM
+    -temporal_model: ImageAutoencoder
+    -ldrd_temporal_model: LDRD03Autoencoder
+    -model_data: DataCollection
+    -FEEDBACK_FILE: String
+    +Enter()
+    +Execute()
+}
+
+'TestingModel Aggregation
+FSM "1" --o "1" TestingModel : has <
+ImageAutoencoder "1" --o "1" TestingModel : has <
+LDRD03Autoencoder "1" --o "1" TestingModel : has <
+DataCollection "1" --o "1" TestingModel : has <
+
+class RLHF {
+    -FSM: FSM
+    -model_data: DataCollection
+    -allsensors: AllSensors
+    -temporal_model: ImageAutoencoder
+    -ldrd_temporal_model: LDRD03Autoencoder
+
+    +Enter()
+    +Execute()
+    +Exit()
+}
+
+'RLHF Aggragation
+FSM "1" --o "1" RLHF : has <
+DataCollection "1" --o "1" RLHF : has <
+AllSensors "1" --o "1" RLHF : has <
+ImageAutoencoder "1" --o "1" RLHF : has <
+LDRD03Autoencoder "1" --o "1" RLHF : has <
+
+
+class End {
+    -FSM: FSM
+    -model_data: DataCollection
+    -allsensors: AllSensors
+
+    +Enter()
+    +Execute()
+}
+
+'End Aggregation
+FSM "1" --o "1" End : has <
+DataCollection "1" --o "1" End : has <
+AllSensors "1" --o "1" End : has <
 
 
 
@@ -209,16 +433,49 @@ class ImageAutoencoder {
 CameraData ..> CameraDataReturnType : returns
 AllSensors ..> AllSensorsData : returns
 Camera ..> CameraData : returns
+
+'AllSensors Composition
 Camera "1" --* "1" AllSensors : has <
+LD19 "1" --* "1" AllSensors : has <
+RD03Protocol "1" --* "1" AllSensors : has <
+
 Transition "0..*" --* "1" FSM : has <
 FSM "1" --* "1" HS_model : has <
+
+'Lidar.py dependencies
 LiDARPreprocessedData "1" --> "1" LidarIntakeData : uses >
 LD19 "1" ..> "1" LidarIntakeData : uses >
 LD19 "1" ..> "1" LiDARPreprocessedData : uses >
 
+'rd03_protocol.py dependencies
+RadarPreprocessedData "1" ..> "0..*" RadarTarget : uses >
+RD03Protocol "1" ..> "0..*" RadarTarget : uses >
+RD03Protocol "1" ..> "1" RadarPreprocessedData : uses >
+
+'Inheritance of HomeostasisModel
 together {
   HomeostasisModel <|-- LDRD03Autoencoder
   HomeostasisModel <|-- ImageAutoencoder
+}
+
+'Inheritance of Sensor
+together {
+  Sensor <|-- LD19 
+  Sensor <|-- RD03Protocol
+}
+
+'Inheritance of State
+together {
+  State <|-- NormalDataTraining
+  State <|-- WipingModelAndFeedback
+  State <|-- Menu
+  State <|-- TrainingModel
+  State <|-- LoadModel
+  State <|-- DocumentFeedback
+  State <|-- DocumentModel
+  State <|-- TestingModel
+  State <|-- RLHF
+  State <|-- End
 }
 
 @enduml
