@@ -1,0 +1,34 @@
+@startuml
+start
+:Initialize frame_data and radar_preprocessed_data;
+while (running?)
+    if (serial.in_waiting?) then (yes)
+        :Read byte from serial;
+        if (header_found?) then (no)
+            :Append byte to frame_data;
+            if (Header sequence detected?) then (yes)
+                :Set header_found = True;
+                :Keep only header bytes in frame_data;
+            endif
+        else (yes)
+            :Append byte to frame_data;
+            if (Frame complete?) then (yes)
+                if (Footer valid?) then (yes)
+                    :Parse up to 3 targets;
+                    :Check within_radius for each target;
+                    :Add valid targets to list;
+                    :Clear frame_data;
+                    :header_found = False;
+                    if (All targets valid?) then (yes)
+                        :Send preprocessed scan;
+                    endif
+                else (no)
+                    :Invalid frame → clear frame_data;
+                    :header_found = False;
+                endif
+            endif
+        endif
+    endif
+endwhile
+stop
+@enduml

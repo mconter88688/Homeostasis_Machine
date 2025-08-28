@@ -24,3 +24,14 @@ fork again
   repeat
     :Capture image from Gemini camera;
     if (image valid?) then (yes)
+      :Access latest LiDAR and Radar data using locks;
+      :Aggregate into AllSensorsData object;
+      :Pass to anomaly detection module;
+    else (no)
+      :Return / Retry;
+    endif
+  repeat while (system running)
+end fork
+
+stop
+@enduml
