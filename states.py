@@ -41,7 +41,7 @@ class DataIntake(fsm.State):
                 self.model_data.append_normal_data(np.stack(self.temporal_model.buffer))
             # Create and display the combined view
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
-            cv2.imshow("Normal data", display)
+            cv2.imshow("Data Intake", display)
         else:
             cv2.imshow("Control Window", cons.BLANK_SCREEN)
         if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
