@@ -15,7 +15,7 @@ sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
 import pandas as pd
 
 
-class NormalDataTraining(fsm.State):
+class DataIntake(fsm.State):
     def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
         self.FSM = FSM
         self.num_frames = 0
@@ -28,7 +28,7 @@ class NormalDataTraining(fsm.State):
         print("Normal Feedback Data Mode")
         if self.allsensors.gemini:
             self.allsensors.gemini.number = 0
-            self.allsensors.gemini.state = "NormalDataTraining"
+            self.allsensors.gemini.state = "DataIntake"
 
     
     def Execute(self):
@@ -129,11 +129,11 @@ class Menu(fsm.State):
             else:
                 print("Invalid Input")
         elif answer == "N":
-            self.FSM.Transition("toNormalDataTraining")
+            self.FSM.Transition("toDataIntake")
         elif answer == "T":
             self.FSM.Transition("toTestingModel")
         elif answer == "F":
-            self.FSM.Transition("toRLHF")
+            self.FSM.Transition("toRealTimeDetection")
         elif answer == "M":
             answer = input("Would you like to document the image (I) or the LDRD (L) model?").strip().upper()
             if answer == "I":
@@ -524,7 +524,7 @@ class TestingModel(fsm.State):
 
 
 
-class RLHF(fsm.State):
+class RealTimeDetection(fsm.State):
     def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
         self.FSM = FSM
         self.model_data = model_data
@@ -536,7 +536,7 @@ class RLHF(fsm.State):
         print("Human Feedback Mode")
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
         if self.allsensors.gemini:
-            self.allsensors.gemini.state = "RLHF"
+            self.allsensors.gemini.state = "RealTimeDetection"
 
     def Execute(self):
         pred = None

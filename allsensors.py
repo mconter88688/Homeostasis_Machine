@@ -3,7 +3,6 @@ import rd03_protocol as rd
 import camera as cam
 from typing import Optional
 from dataclasses import dataclass
-import constants as cons
 
 
 
@@ -85,10 +84,10 @@ class AllSensors:
                     return None
                 else:
                     pass
-                    for i in range(cons.RADAR_MAX_TARGETS):
-                        print(targets.distances[i])
-                        print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}, Angle: {targets.angles[i]}")
-                    print("******************")
+                    # for i in range(cons.RADAR_MAX_TARGETS):
+                        #print(targets.distances[i])
+                    #     print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}, Angle: {targets.angles[i]}")
+                    # print("******************")
             except Exception as e:
                 print(f"[Radar Error] {e}")
         return AllSensorsData(lidar_data = lidar_scan, rd03_data = targets, camera_data=camera_data)
