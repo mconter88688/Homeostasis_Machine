@@ -1,0 +1,100 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+hide empty description
+
+[*] --> Menu
+
+state "Menu" as Menu
+Menu : entry / print menu options
+Menu : do / wait for user input
+Menu : exit / none
+
+state "End" as End
+End : entry / stop sensors and clear program-running flag
+End : do / none
+End : exit / none
+
+state "NormalDataTraining" as NormalDataTraining
+NormalDataTraining : entry / init Gemini for data collection
+NormalDataTraining : do / capture, save, and display sensor data
+NormalDataTraining : exit / clear buffers; destroy all windows
+
+state "RLHF" as RLHF
+RLHF : entry / print instructions; prepare camera
+RLHF : do / capture sensor data; run anomaly detection; display results
+RLHF : exit / clear buffers; destroy all windows
+
+state "TestingModel" as TestingModel
+TestingModel : entry / print testing start
+TestingModel : do / run model on selected data; graph; optionally save
+TestingModel : exit / none
+
+state "TrainingImageModel" as TrainingImageModel
+TrainingImageModel : entry / print training message
+TrainingImageModel : do / load data; train image model; optionally graph & save
+TrainingImageModel : exit / none
+
+state "TrainingLDRDModel" as TrainingLDRDModel
+TrainingLDRDModel : entry / print training message
+TrainingLDRDModel : do / load data; train LDRD model; optionally graph & save
+TrainingLDRDModel : exit / none
+
+state "DocumentImageModel" as DocumentImageModel
+DocumentImageModel : entry / print documentation message
+DocumentImageModel : do / save image model + training details
+DocumentImageModel : exit / print confirmation
+
+state "DocumentLDRDModel" as DocumentLDRDModel
+DocumentLDRDModel : entry / print documentation message
+DocumentLDRDModel : do / save LDRD model + training details
+DocumentLDRDModel : exit / print confirmation
+
+state "DocumentFeedback" as DocumentFeedback
+DocumentFeedback : entry / none
+DocumentFeedback : do / save collected data to file with notes
+DocumentFeedback : exit / none
+
+state "WipingModelAndFeedback" as WipingModelAndFeedback
+WipingModelAndFeedback : entry / print deletion message
+WipingModelAndFeedback : do / clear currently loaded data and/or models
+WipingModelAndFeedback : exit / none
+
+state "LoadImageModel" as LoadImageModel
+LoadImageModel : entry / list available image models
+LoadImageModel : do / load selected model into memory or quit
+LoadImageModel : exit / none
+
+state "LoadLDRDModel" as LoadLDRDModel
+LoadLDRDModel : entry / list available LDRD models
+LoadLDRDModel : do / load selected model into memory or quit
+LoadLDRDModel : exit / none
+
+' -------- Transitions --------
+Menu --> NormalDataTraining : user inputs N
+Menu --> TestingModel : user inputs T
+Menu --> TrainingImageModel : user inputs I
+Menu --> TrainingLDRDModel : user inputs L
+Menu --> DocumentImageModel : user inputs D
+Menu --> DocumentLDRDModel : user inputs L
+Menu --> DocumentFeedback : user inputs F
+Menu --> LoadImageModel : user inputs I
+Menu --> LoadLDRDModel : user inputs L
+Menu --> WipingModelAndFeedback : user inputs W
+Menu --> RLHF : user inputs R
+Menu --> End : user inputs Q
+
+NormalDataTraining --> Menu : no user input
+TestingModel --> Menu : testing completes
+TrainingImageModel --> DocumentImageModel : user wants to save newly trained model
+TrainingLDRDModel --> DocumentLDRDModel : user wants to save newly trained model
+DocumentFeedback --> Menu : data finished saving
+DocumentImageModel --> Menu : image model is done being saved
+DocumentLDRDModel --> Menu : LDRD model is done being saved
+WipingModelAndFeedback --> Menu : components wiped per user input
+LoadImageModel --> Menu : user quits (Q), image model loaded
+LoadLDRDModel --> Menu : user quits (Q), LDRD model loaded
+DocumentImageModel --> Menu : model trained; user opted not to save
+DocumentLDRDModel --> Menu : model trained; user opted not to save
+@enduml
+

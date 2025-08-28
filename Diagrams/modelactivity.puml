@@ -1,0 +1,24 @@
+@startuml
+start
+
+:Input Image Data;
+:Input LiDAR + Radar Data;
+
+fork
+  :Pass Image through Image Autoencoder;
+  :Compute Image MSE;
+fork again
+  :Pass LiDAR+Radar through Autoencoder (fusion at bottleneck);
+  :Compute LiDAR+Radar MSE;
+end fork
+
+:Compute Weighted Sum of Errors;
+:Generate Confidence Score;
+if (Score > Threshold?) then (Yes)
+  :Anomaly Detected;
+else (No)
+  :Normal;
+endif
+
+stop
+@enduml

@@ -1,5 +1,6 @@
 @startuml
 
+left to right direction
 skinparam classAttributeIconSize 0
 skinparam classIconSize 0
 skinparam useCircleForClasses false
@@ -7,7 +8,7 @@ skinparam shadowing false
 skinparam classArrowColor Black
 skinparam classStyle rectangle
 hide circle
-scale 0.5
+scale 0.85
 
 
 
@@ -443,7 +444,7 @@ Transition "0..*" --* "1" FSM : has <
 FSM "1" --* "1" HS_model : has <
 
 'Lidar.py dependencies
-LiDARPreprocessedData "1" --> "1" LidarIntakeData : uses >
+LiDARPreprocessedData "1" ..> "1" LidarIntakeData : uses >
 LD19 "1" ..> "1" LidarIntakeData : uses >
 LD19 "1" ..> "1" LiDARPreprocessedData : uses >
 
