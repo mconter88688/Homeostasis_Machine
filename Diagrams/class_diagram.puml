@@ -11,21 +11,7 @@ hide circle
 scale 0.85
 
 
-
-class DataCollection {
-    +normal_data: List
-    +ld_normal_data: List
-    +rd03_normal_data: List
-    +program_running: Boolean
-
-    +load_data()
-    +clear_data()
-    +append_normal_data()
-    +append_ld_normal_data()
-    +append_rd03_normal_data()
-    +save_data()
-    +is_empty(): Boolean
-}
+package "Sensor Integration" {
 
 class CameraData {
     +ret: Boolean
@@ -87,36 +73,6 @@ class Camera{
     +stop()
 }
 
-
-class Transition{
-    +toState: String
-    +Execute()
-}
-
-abstract class State {
-    +Enter()
-    +Execute()
-    +Exit()
-}
-
-class FSM {
-    +states: Map<String, State>
-    +transitions: Map<String, Transition>
-    -char: Character
-    -curState: State
-    -prevState: State
-    -curTrans: Transition
-
-    +SetState()
-    +Transition()
-    +Execute()
-}
-
-class HS_model{
-    +FSM: FSM
-}
-
-
 class LiDARPreprocessedData {
     +num_data_points: Integer
     +angle_array: Array<Float>
@@ -157,51 +113,6 @@ class LD19 {
     +send_scan_calc_speed_and_clear()
     -_reader_thread()
     
-}
-
-
-class ModelConfigParam {
-    +epochs: Integer
-    +batch_size: Integer [0..1]
-    +validation_split: Float
-    +feedback_file: String [0..1]
-    +model_file: String [0..1]
-    +temp_graph: String [0..1]
-    +verbose: Integer
-    +callbacks: Callback [0..1]
-    +shuffle: Boolean
-
-    +redefine_all()
-}
-
-abstract class HomeostasisModel {
-    +model: Model
-    +fit(): History
-}
-
-class LDRD03Autoencoder {
-  +lidar_buffer: Deque<ndarray>
-  +radar_buffer: Deque<ndarray>
-  +all_features_append()
-  +are_buffers_long_enough(): Boolean
-  +model_prediction(): Float [0..1]
-  +predict(): Float
-}
-
-class ImageAutoencoder {
-  +color_feature_extractor: Model [0..1]
-  +ir_feature_extractor: Model [0..1]
-  +hdr_feature_extractor: Model [0..1]
-  +buffer: Deque<ndarray>
-  +feature_append()
-  +is_buffer_long_enough(): Bool
-  +feature_extractor_setup()
-  +extract_color_features(): ndarray
-  +extract_ir_features(): ndarray
-  +extract_hdr_features(): ndarray
-  +feature_extract_combine(): ndarray
-  +model_prediction(): Float [0..1]
-  +predict(): Float
 }
 
 class RadarPreprocessedData {
@@ -264,7 +175,115 @@ abstract class Sensor {
     + get_scan(): Object [0..1]
 }
 
-class NormalDataTraining {
+}
+
+
+
+package "Anomaly Detection Model" {
+
+class DataCollection {
+    +normal_data: List
+    +ld_normal_data: List
+    +rd03_normal_data: List
+    +program_running: Boolean
+
+    +load_data()
+    +clear_data()
+    +append_normal_data()
+    +append_ld_normal_data()
+    +append_rd03_normal_data()
+    +save_data()
+    +is_empty(): Boolean
+}
+
+class ModelConfigParam {
+    +epochs: Integer
+    +batch_size: Integer [0..1]
+    +validation_split: Float
+    +feedback_file: String [0..1]
+    +model_file: String [0..1]
+    +temp_graph: String [0..1]
+    +verbose: Integer
+    +callbacks: Callback [0..1]
+    +shuffle: Boolean
+
+    +redefine_all()
+}
+
+abstract class HomeostasisModel {
+    +model: Model
+    +fit(): History
+}
+
+class LDRD03Autoencoder {
+  +lidar_buffer: Deque<ndarray>
+  +radar_buffer: Deque<ndarray>
+  +all_features_append()
+  +are_buffers_long_enough(): Boolean
+  +model_prediction(): Float [0..1]
+  +predict(): Float
+}
+
+class ImageAutoencoder {
+  +color_feature_extractor: Model [0..1]
+  +ir_feature_extractor: Model [0..1]
+  +hdr_feature_extractor: Model [0..1]
+  +buffer: Deque<ndarray>
+  +feature_append()
+  +is_buffer_long_enough(): Bool
+  +feature_extractor_setup()
+  +extract_color_features(): ndarray
+  +extract_ir_features(): ndarray
+  +extract_hdr_features(): ndarray
+  +feature_extract_combine(): ndarray
+  +model_prediction(): Float [0..1]
+  +predict(): Float
+}
+
+}
+
+package "State Machine" {
+    class WipingModelAndFeedback {
+        -FEEDBACK_FILE: String
+        -IMAGE_MODEL_PATH: String
+        -LDRD_MODEL_PATH: String
+        -FSM: FSM
+        -model_data: DataCollection
+
+        +Enter()
+        +Execute()
+    }
+
+    
+class Transition{
+    +toState: String
+    +Execute()
+}
+
+abstract class State {
+    +Enter()
+    +Execute()
+    +Exit()
+}
+
+class FSM {
+    +states: Map<String, State>
+    +transitions: Map<String, Transition>
+    -char: Character
+    -curState: State
+    -prevState: State
+    -curTrans: Transition
+
+    +SetState()
+    +Transition()
+    +Execute()
+}
+
+class HS_model{
+    +FSM: FSM
+}
+
+class DataIntake {
     - FSM: FSM
     - num_frames: Integer
     - model_data: DataCollection
@@ -277,40 +296,12 @@ class NormalDataTraining {
     + Exit()
 }
 
-'NormalDataTraining Aggregation
-FSM "1" --o "1" NormalDataTraining : has <
-DataCollection "1" --o "1" NormalDataTraining : has <
-AllSensors "1" --o "1" NormalDataTraining : has <
-ImageAutoencoder "1" --o "1" NormalDataTraining : has <
-LDRD03Autoencoder "1" --o "1" NormalDataTraining : has <
-
-
-class WipingModelAndFeedback {
-  -FEEDBACK_FILE: String
-  -IMAGE_MODEL_PATH: String
-  -LDRD_MODEL_PATH: String
-  -FSM: FSM
-  -model_data: DataCollection
-  
-  +Enter()
-  +Execute()
-}
-
-'WipingModelAndFeedback Aggregation
-FSM "1" --o "1" WipingModelAndFeedback : has <
-DataCollection "1" --o "1" WipingModelAndFeedback : has <
-
-
 class Menu {
   -FSM: FSM
 
   +Enter()
   +Execute()
 }
-
-'Menu Aggregation
-FSM "1" --o "1" Menu : has <
-
 
 class TrainingModel {
     -FEEDBACK_FILE: String
@@ -326,12 +317,6 @@ class TrainingModel {
     +Execute()
 }
 
-'TrainingModel Aggregation
-FSM "1" --o "1" TrainingModel : has <
-DataCollection "1" --o "1" TrainingModel : has <
-ModelConfigParam  "1" --o "1" TrainingModel : has <
-HomeostasisModel  "1" --o "1" TrainingModel : has <
-
 class LoadModel {
     -FSM: FSM
     -model_params: ModelConfigParam
@@ -343,11 +328,6 @@ class LoadModel {
     +Execute()
 }
 
-'LoadModel Aggregation
-FSM "1" --o "1" LoadModel : has <
-ModelConfigParam "1" --o "1" LoadModel : has <
-HomeostasisModel "1" --o "1" LoadModel : has <
-
 class DocumentFeedback {
     -FSM: FSM
     -model_params_list: List<ModelConfigParam>
@@ -355,12 +335,6 @@ class DocumentFeedback {
     +Enter()
     +Execute()
 }
-
-'DocumentFeedback Aggregation
-FSM "1" --o "1" DocumentFeedback : has <
-ModelConfigParam "1" --o "1" DocumentFeedback : has <
-DataCollection "1" --o "1" DocumentFeedback : has <
-
 
 class DocumentModel {
     -FSM: FSM
@@ -373,11 +347,6 @@ class DocumentModel {
     +Exit()
 }
 
-'DocumentModel Aggregation
-FSM "1" --o "1" DocumentModel : has <
-ModelConfigParam "1" --o "1" DocumentModel : has <
-HomeostasisModel "1" --o "1" DocumentModel : has <
-
 class TestingModel {
     -FSM: FSM
     -temporal_model: ImageAutoencoder
@@ -388,13 +357,7 @@ class TestingModel {
     +Execute()
 }
 
-'TestingModel Aggregation
-FSM "1" --o "1" TestingModel : has <
-ImageAutoencoder "1" --o "1" TestingModel : has <
-LDRD03Autoencoder "1" --o "1" TestingModel : has <
-DataCollection "1" --o "1" TestingModel : has <
-
-class RLHF {
+class RealTimeDetection {
     -FSM: FSM
     -model_data: DataCollection
     -allsensors: AllSensors
@@ -406,14 +369,6 @@ class RLHF {
     +Exit()
 }
 
-'RLHF Aggragation
-FSM "1" --o "1" RLHF : has <
-DataCollection "1" --o "1" RLHF : has <
-AllSensors "1" --o "1" RLHF : has <
-ImageAutoencoder "1" --o "1" RLHF : has <
-LDRD03Autoencoder "1" --o "1" RLHF : has <
-
-
 class End {
     -FSM: FSM
     -model_data: DataCollection
@@ -423,12 +378,61 @@ class End {
     +Execute()
 }
 
+}
+
+
+'DataIntake Aggregation
+FSM "1" --o "1" DataIntake : has <
+DataCollection "1" --o "1" DataIntake : has <
+AllSensors "1" --o "1" DataIntake : has <
+ImageAutoencoder "1" --o "1" DataIntake : has <
+LDRD03Autoencoder "1" --o "1" DataIntake : has <
+
+'WipingModelAndFeedback Aggregation
+FSM "1" --o "1" WipingModelAndFeedback : has <
+DataCollection "1" --o "1" WipingModelAndFeedback : has <
+
+'Menu Aggregation
+FSM "1" --o "1" Menu : has <
+
+'TrainingModel Aggregation
+FSM "1" --o "1" TrainingModel : has <
+DataCollection "1" --o "1" TrainingModel : has <
+ModelConfigParam  "1" --o "1" TrainingModel : has <
+HomeostasisModel  "1" --o "1" TrainingModel : has <
+
+'LoadModel Aggregation
+FSM "1" --o "1" LoadModel : has <
+ModelConfigParam "1" --o "1" LoadModel : has <
+HomeostasisModel "1" --o "1" LoadModel : has <
+
+'DocumentFeedback Aggregation
+FSM "1" --o "1" DocumentFeedback : has <
+ModelConfigParam "1" --o "1" DocumentFeedback : has <
+DataCollection "1" --o "1" DocumentFeedback : has <
+
+'DocumentModel Aggregation
+FSM "1" --o "1" DocumentModel : has <
+ModelConfigParam "1" --o "1" DocumentModel : has <
+HomeostasisModel "1" --o "1" DocumentModel : has <
+
+'TestingModel Aggregation
+FSM "1" --o "1" TestingModel : has <
+ImageAutoencoder "1" --o "1" TestingModel : has <
+LDRD03Autoencoder "1" --o "1" TestingModel : has <
+DataCollection "1" --o "1" TestingModel : has <
+
+'RealTimeDetection Aggragation
+FSM "1" --o "1" RealTimeDetection : has <
+DataCollection "1" --o "1" RealTimeDetection : has <
+AllSensors "1" --o "1" RealTimeDetection : has <
+ImageAutoencoder "1" --o "1" RealTimeDetection : has <
+LDRD03Autoencoder "1" --o "1" RealTimeDetection : has <
+
 'End Aggregation
 FSM "1" --o "1" End : has <
 DataCollection "1" --o "1" End : has <
 AllSensors "1" --o "1" End : has <
-
-
 
 ' Dependencies
 CameraData ..> CameraDataReturnType : returns
@@ -467,7 +471,7 @@ together {
 
 'Inheritance of State
 together {
-  State <|-- NormalDataTraining
+  State <|-- DataIntake
   State <|-- WipingModelAndFeedback
   State <|-- Menu
   State <|-- TrainingModel
@@ -475,7 +479,7 @@ together {
   State <|-- DocumentFeedback
   State <|-- DocumentModel
   State <|-- TestingModel
-  State <|-- RLHF
+  State <|-- RealTimeDetection
   State <|-- End
 }
 

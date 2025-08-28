@@ -565,7 +565,7 @@ class RealTimeDetection(fsm.State):
 
         if pred:    
             is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
-            self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+            self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.4f})"
 
             # Draw on frame
         if all_sensor_data:
