@@ -189,7 +189,6 @@ class RD03Protocol(Sensor):
                                     if not (within_radius(target.distance, RADAR_MIN_RANGE, RADAR_MAX_RANGE) or target.distance == 0):
                                         within_distance = False
                                         continue
-                                        pass
                                     
                                     # print("target " + str(i) + " found")
                                     targets.append(target)

@@ -55,28 +55,6 @@ def build_one_way_7_18():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-def build_autoencoder_7_23_not_tested():
-    input_layer = Input(shape = (1, cons.SEQ_LEN, 1536))
-    x = ConvLSTM2D(32, (3,3), activation = 'relu', padding = 'same', return_sequences = True, strides = (2,2))(input_layer)
-    x = LayerNormalization()(x)
-    
-    x = ConvLSTM2D(64, (3,3), activation='relu', padding = 'same', return_sequences=True, strides=(2,2))(x)
-    x = LayerNormalization()(x)
-
-    encoded = ConvLSTM2D(64, (3,3), activation='relu', padding='same', return_sequences=True)(x)
-
-    x = Conv3DTranspose(64, (3,3,3), strides=(1,2,2), padding='same', activation='relu')(encoded)
-    x = LayerNormalization()(x)
-
-    x = Conv3DTranspose(32, (3,3,3), strides=(1,2,2), padding='same', activation='relu')(x)
-    x = LayerNormalization()(x)
-
-    # decoded should have number of output channels as number of neurons
-    decoded = Conv3DTranspose(3, (3,3,3), padding='same', activation='sigmoid')(x)
-
-    model = Model(inputs=input_layer, outputs=decoded)
-    model.compile(optimizer=Adam(1e-4), loss='mse')
-    return model
 
 def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256):
     input_layer = Input(shape=(seq_len, feature_dim))  # (batch, time, features)

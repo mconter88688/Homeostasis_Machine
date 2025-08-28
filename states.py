@@ -603,6 +603,3 @@ class End(fsm.State):
 
     def Execute(self):
         pass
-
-    def End(self):
-        pass
