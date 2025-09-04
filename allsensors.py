@@ -1,17 +1,17 @@
 import LiDAR as ld
 import rd03_protocol as rd
 import camera as cam
-from typing import Optional, List
+from typing import Optional
 from dataclasses import dataclass
-from time import sleep
+
 
 
 
 @dataclass
 class AllSensorsData:
     camera_data: cam.CameraData
-    lidar_data: Optional[ld.LidarData] = None
-    rd03_data: Optional[List[rd.RadarTarget]] = None
+    lidar_data: Optional[ld.LiDARPreprocessedData] = None
+    rd03_data: Optional[rd.RadarPreprocessedData] = None
     
 
     
@@ -55,11 +55,26 @@ class AllSensors:
         if self.lidar:
             lidar_scan = self.lidar.get_scan()
             if lidar_scan:
+                pass
+                # lidar_scan.graph()
                 #print(lidar_scan.timestamp)
-                for i in range(len(lidar_scan.angles)):
-                    print(str(lidar_scan.angles[i]))# + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
-                sleep(0.05)
+                # print("Allsensors:")
+                # print(lidar_scan.angles[0])
+                # print(lidar_scan.angles[-1])
+                # for i in range(len(lidar_scan.angles)):
+                #     print(str(lidar_scan.angles[i])) # + ", " +  str(lidar_scan.distances[i]) + ", " + str(lidar_scan.intensities[i]))
+                # if not lidar_scan.mid_timestamp in self.lidar.timestamp_data:
+                # print("Num points: " + str(len(lidar_scan.angle_array)))
+                # print("Timestamp: " + str(lidar_scan.timestamp))
+                # print(lidar_scan.angle_array[0])
+                # print(lidar_scan.angle_array[-1])
+                #     self.lidar.timestamp_data.append(lidar_scan.mid_timestamp)
+                #     if len(lidar_scan.angles) > 506:
+                #         for i in range(len(lidar_scan.angles)):
+                #             print(str(lidar_scan.angles[i]))
+                # print("****************")               
             else:
+                #print("no lidar readings")
                 return None
         if self.rd03:
             try: 
@@ -68,8 +83,11 @@ class AllSensors:
                     print("No targets found")
                     return None
                 else:
-                    for target in targets:
-                        print(f"Target at ({target.x_coord}, {target.y_coord}), Speed: {target.speed}")
+                    pass
+                    # for i in range(cons.RADAR_MAX_TARGETS):
+                        #print(targets.distances[i])
+                    #     print(f"Target at ({targets.x_coords[i]}, {targets.y_coords[i]}), Speed: {targets.speeds[i]}, Angle: {targets.angles[i]}")
+                    # print("******************")
             except Exception as e:
                 print(f"[Radar Error] {e}")
         return AllSensorsData(lidar_data = lidar_scan, rd03_data = targets, camera_data=camera_data)

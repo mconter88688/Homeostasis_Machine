@@ -1,0 +1,17 @@
+@startuml
+package "Anomaly Detection System" {
+  
+  [Image Autoencoder] as ImgAE
+  [LiDAR+Radar Autoencoder] as LRAE
+  [MSE Calculator (Image)] as ImgMSE
+  [MSE Calculator (LiDAR+Radar)] as LRMSE
+  [Weighted Fusion] as Fusion
+  [Final Anomaly Decision] as Decision
+
+  ImgAE --> ImgMSE
+  LRAE --> LRMSE
+  ImgMSE --> Fusion
+  LRMSE --> Fusion
+  Fusion --> Decision
+}
+@enduml

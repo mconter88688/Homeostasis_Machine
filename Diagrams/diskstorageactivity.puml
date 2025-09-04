@@ -1,0 +1,20 @@
+@startuml
+start
+
+:Initialize system;
+:Check initial free space;
+
+while (Program running?) is (yes)
+  if (Enough free disk space?) then (yes)
+    :Execute FSM;
+  else (no)
+    :Log warning "Low disk space";
+    :Transition FSM -> End;
+    :Execute FSM End state;
+    :System shutdown;
+    stop
+  endif
+endwhile
+
+stop
+@enduml

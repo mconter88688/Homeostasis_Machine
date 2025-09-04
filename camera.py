@@ -293,7 +293,7 @@ class Camera:
         add_label("HDR", w, 0)
         add_label("Left IR", 0, h)
         add_label("Right IR", w, h)
-        if self.state == "NormalDataTraining":
+        if self.state == "DataIntake":
             add_label(str(self.number), w-15, h*2-60)
         else:
             add_label(self.state, w-25, h*2-60)

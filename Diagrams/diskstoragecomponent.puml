@@ -1,0 +1,10 @@
+@startuml
+package "Disk Storage System Components" {
+  
+  [Disk Space Manager] as DiskSpace
+  [Finite State Machine] as FSM
+
+  DiskSpace -down-> FSM : allows execution if\nsufficient space
+  DiskSpace -down-> [Shutdown] : triggers when below threshold
+}
+@enduml

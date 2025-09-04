@@ -1,0 +1,187 @@
+@startuml Sensors
+left to right direction
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classIconSize 0
+skinparam classArrowColor Black
+skinparam classStyle rectangle
+skinparam maxMessageSize 400
+skinparam classFontSize 12
+scale 1.2
+
+package "Sensors & Preprocessing" {
+
+    class Camera{
+        +pipeline: Pipeline
+        +device: Device
+        +config: Config
+        +sensor_list: SensorList
+        +video_sensor_types: List<OBSensorType>
+        +hdr_filter: Filter[0..1]
+        +frames_queue: Queue<FrameSet>
+        +cached_frames: Dict<String, ndarray [0..1]>
+        +state: String [0..1]
+        +number: Integer
+        +configure_streams()
+        +configure_HDR()
+        +start()
+        +one_capture(): CameraData [0..1]
+        +process_color(): ndarray [0..1]
+        +create_depth_image(): ndarray
+        +create_ir_image(): ndarray
+        +safe_get_depth(): ndarray [0..1]
+        +safe_get_ir(): ndarray [0..1]
+        +on_new_frame_callback()
+        +create_display(): ndarray [0..1]
+        +enhance_contrast(): ndarray
+        +stop()
+    }
+
+    class CameraData {
+        +ret: Boolean
+        +frame: List<ndarray>
+        +processed_frames: List<ndarray>
+        +return_data_in_list(): CameraDataReturnType
+    }
+
+    class CameraDataReturnType {
+        +ret: Boolean
+        +frame: List<ndarray>
+        +processed_frames: List<ndarray>
+    }
+
+    class LD19 {
+        +start()
+        +send_scan_calc_speed_and_clear()
+        -_reader_thread()
+    }
+
+    class LidarIntakeData {
+        +angles: List<Float>
+        +distances: List<Float>
+        +intensities: List<Float>
+        +speed_samples: List<Float>
+        +start_timestamp: Integer [0..1]
+        +end_timestamp: Integer [0..1]
+        +append_all_lists()
+        +clear_all()
+        +copy(): LidarIntakeData
+        +calc_mid_timestamp(): Float
+        +calc_speed(): Float
+    }
+
+    class LiDARPreprocessedData {
+        +num_data_points: Integer
+        +angle_array: Array<Float>
+        +distance_array: Array<Float>
+        +intensity_array: Array<Float>
+        +speed: Float [0..1]
+        +timestamp: Float [0..1]
+        +are_there_prev_vals: Boolean
+        +prev_distance: Array<Float>
+        +prev_intensity: Array<Float>
+        +circular_median_filter()
+        +ema()
+        +bin_lidar_data()
+        +class_to_single_normalized_numpy_array()
+        +dsp_lidar()
+        +copy(): LiDARPreprocessedData
+        +graph()
+    }
+
+    class RD03Protocol {
+        +HEADER: bytes
+        +FOOTER: bytes
+        +TARGET_DATA_SIZE: Integer
+        +WAITING_HEADER: Integer
+        +READING_DATA: Integer
+        +WAITING_FOOTER: Integer
+        +TRACE_LENGTH: Integer
+        +start()
+        +_decode_raw(): Integer
+        +dsp_and_send_scan()
+        +_parse_target_data(): RadarTarget
+        +_reader_thread()
+    }
+
+    class RadarPreprocessedData {
+        +x_coords: ndarray
+        +y_coords: ndarray
+        +speeds: ndarray
+        +distances: ndarray
+        +timestamp: Integer [0..1]
+        +are_there_prev_vals: Boolean
+        +prev_x_coords: ndarray
+        +prev_y_coords: ndarray
+        +prev_speeds: ndarray
+        +prev_distances: ndarray
+        +angles: ndarray
+        +update_for_new_target_data()
+        +class_to_single_normalized_numpy_array(): ndarray
+        +copy(): RadarPreprocessedData
+        +ema()
+        +coords_to_angles()
+    }
+
+    class RadarTarget {
+        +x_coord: Integer
+        +y_coord: Integer
+        +speed: Integer
+        +distance: Integer
+    }
+
+    abstract class Sensor {
+        +name: String
+        +serial: Serial [0..1]
+        +baudrate: Integer
+        +port: String
+        +thread: Thread [0..1]
+        +running: Boolean
+        +lock: Lock
+        +latest_data: Object [0..1]
+        +timestamp_data: List<Float>
+        +start()
+        +stop()
+        +get_scan(): Object [0..1]
+    }
+
+    class AllSensors {
+        +lidar: LD19 [0..1]
+        +rd03: RD03Protocol [0..1]
+        +gemini: Camera [0..1]
+        +lidar_data: List [0..1]
+        +rd03_data: List [0..1]
+        +gemini_data: List [0..1]
+        +start()
+        +stop()
+        +capture_sensor_info(): AllSensorsData [0..1]
+    }
+
+    class AllSensorsData {
+        +camera_data: CameraData
+        +lidar_data: LiDARPreprocessedData [0..1]
+        +rd03_data: RadarPreprocessedData [0..1]
+    }
+
+    ' Inheritances
+    Sensor <|-- LD19
+    Sensor <|-- RD03Protocol
+
+    ' Associations / Compositions
+    Camera "1" --* "1" AllSensors : has <
+    LD19 "1" --* "1" AllSensors : has <
+    RD03Protocol "1" --* "1" AllSensors : has <
+    AllSensors ..> AllSensorsData : returns
+    Camera ..> CameraData : returns
+
+    ' Lidar/Radar dependencies
+    LiDARPreprocessedData "1" ..> "1" LidarIntakeData : uses >
+    LD19 "1" ..> "1" LidarIntakeData : uses >
+    LD19 "1" ..> "1" LiDARPreprocessedData : uses >
+    RadarPreprocessedData "1" ..> "0..*" RadarTarget : uses >
+    RD03Protocol "1" ..> "0..*" RadarTarget : uses >
+    RD03Protocol "1" ..> "1" RadarPreprocessedData : uses >
+
+    CameraData ..> CameraDataReturnType : returns
+}
+@enduml

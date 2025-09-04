@@ -1,6 +1,4 @@
 import fsm
-from time import sleep
-import LiDAR as ld
 import constants as cons
 import numpy as np # for arrays
 import cv2 # for camera
@@ -10,24 +8,27 @@ from tensorflow.keras.models import load_model # for model architecture and load
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import models as mod
 import sys
 sys.path.append("/home/jon/Homeostasis_machine/rd03_protocol_repo")
-from rd03_protocol import RD03Protocol # https://github.com/TimSchimansky/RD-03D-Radar/blob/main/readme.md
+import pandas as pd
 
-class NormalDataTraining(fsm.State):
-    def __init__(self, FSM, model_data, allsensors, temporal_model):
+
+class DataIntake(fsm.State):
+    def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
         self.FSM = FSM
         self.num_frames = 0
         self.model_data = model_data
         self.allsensors = allsensors
         self.temporal_model = temporal_model
+        self.ldrd_temporal_model = ldrd_temporal_model
 
     def Enter(self):
         print("Normal Feedback Data Mode")
         if self.allsensors.gemini:
             self.allsensors.gemini.number = 0
-            self.allsensors.gemini.state = "NormalDataTraining"
+            self.allsensors.gemini.state = "DataIntake"
 
     
     def Execute(self):
@@ -40,9 +41,15 @@ class NormalDataTraining(fsm.State):
                 self.model_data.append_normal_data(np.stack(self.temporal_model.buffer))
             # Create and display the combined view
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
-            cv2.imshow("Normal data", display)
+            cv2.imshow("Data Intake", display)
         else:
             cv2.imshow("Control Window", cons.BLANK_SCREEN)
+        if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
+            self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
+            if self.ldrd_temporal_model.are_buffers_long_enough():
+                self.model_data.append_ld_normal_data(np.stack(self.ldrd_temporal_model.lidar_buffer)) 
+                self.model_data.append_rd03_normal_data(np.stack(self.ldrd_temporal_model.radar_buffer))
+        
         key = cv2.waitKey(1) & 0xFF
 
         if key == ord('q'):
@@ -56,9 +63,10 @@ class NormalDataTraining(fsm.State):
         cv2.destroyAllWindows()
 
 class WipingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data):
+    def __init__(self, FEEDBACK_FILE, IMAGE_MODEL_PATH, LDRD_MODEL_PATH, FSM, model_data):
         self.FEEDBACK_FILE = FEEDBACK_FILE
-        self.MODEL_PATH = MODEL_PATH
+        self.IMAGE_MODEL_PATH = IMAGE_MODEL_PATH
+        self.LDRD_MODEL_PATH = LDRD_MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
 
@@ -66,18 +74,27 @@ class WipingModelAndFeedback(fsm.State):
         print("Deleting model and feedback data")
     
     def Execute(self):
-        self.model_data.clear_data()
         
-        with open(cons.FEEDBACK_FILE, "wb") as f:
-            pass
-
-        if os.path.exists(self.MODEL_PATH):
-            os.remove(self.MODEL_PATH)
-        print("Feedback and model successfully removed!")
+        answer = input("Would you like to wipe the currently loaded data? (Y/N)").strip().upper()
+        if answer == "Y":
+            self.model_data.clear_data()
+            
+            # Clear Feedback Data
+            with open(self.FEEDBACK_FILE, "wb") as f:
+                pass
+            print("Data successfully wiped!")
+        
+        answer = input("Would you like to wipe currently loaded models? (Y/N)").strip().upper()
+        if answer == "Y":
+            if os.path.exists(self.IMAGE_MODEL_PATH):
+                os.remove(self.IMAGE_MODEL_PATH)
+            if os.path.exists(self.LDRD_MODEL_PATH):
+                os.remove(self.LDRD_MODEL_PATH)
+            print("Models successfully removed!")
+        print("Returning to Menu...")
         self.FSM.Transition("toMenu")
         return
-    def Exit(self):
-        pass
+    
         
     
 
@@ -90,7 +107,8 @@ class Menu(fsm.State):
         print("**Select from the following:**")
         print("Wipe Model and Feedback:...........................W")
         print("Retrain Model:.....................................R")
-        print("Take in Normal Training Data:......................N")
+        print("Take in Training Data:.............................N")
+        print("Test Your Data.....................................T")
         print("Give User Input on Normal and Abnormal Scenes:.....F")
         print("Document Your Currently Loaded Model...............M")
         print("Document Your Currently Loaded Data................D")
@@ -103,15 +121,31 @@ class Menu(fsm.State):
         if answer == "W":
             self.FSM.Transition("toWipingModelAndFeedback")
         elif answer == "R":
-            self.FSM.Transition("toSavingModelAndFeedback")
+            answer = input("Would you like to train the image (I) or the LDRD (L) model?").strip().upper()
+            if answer == "I":
+                self.FSM.Transition("toTrainingImageModel")
+            elif answer == "L":
+                self.FSM.Transition("toTrainingLDRDModel")
+            else:
+                print("Invalid Input")
         elif answer == "N":
-            self.FSM.Transition("toNormalDataTraining")
+            self.FSM.Transition("toDataIntake")
+        elif answer == "T":
+            self.FSM.Transition("toTestingModel")
         elif answer == "F":
-            self.FSM.Transition("toRLHF")
+            self.FSM.Transition("toRealTimeDetection")
         elif answer == "M":
-            self.FSM.Transition("toDocumentModel")
+            answer = input("Would you like to document the image (I) or the LDRD (L) model?").strip().upper()
+            if answer == "I":
+                self.FSM.Transition("toDocumentImageModel")
+            elif answer == "L":
+                self.FSM.Transition("toDocumentLDRDModel")
         elif answer == "L":
-            self.FSM.Transition("toLoadModel")
+            answer = input("Would you like to load in the image (I) or the LDRD (L) model?").strip().upper()
+            if answer == "I":
+                self.FSM.Transition("toLoadImageModel")
+            elif answer == "L":
+                self.FSM.Transition("toLoadLDRDModel")
         elif answer == "D":
             self.FSM.Transition("toDocumentFeedback")
         elif answer == "Q":
@@ -119,34 +153,37 @@ class Menu(fsm.State):
         else:
             print("Invalid input. Try again.")
 
-    def Exit(self):
-        pass
+
+        
 
 
-class SavingModelAndFeedback(fsm.State):
-    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params, temporal_model):
+
+class TrainingModel(fsm.State):
+    def __init__(self, FEEDBACK_FILE, MODEL_PATH, FSM, model_data, model_params, temporal_model, BEST_MODEL_PATH, name_of_model = ""):
         self.FEEDBACK_FILE = FEEDBACK_FILE
         self.MODEL_PATH = MODEL_PATH
         self.FSM = FSM
         self.model_data = model_data
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.BEST_MODEL_PATH = BEST_MODEL_PATH
+        self.name_of_model = name_of_model
     
     def Enter(self):
-        print("Saving Model and Feedback File")
+        print("Training " + self.name_of_model + " Model")
 
     def Execute(self):
         # Retrain model
         self.model_params.callbacks = [
                         EarlyStopping(patience=3, restore_best_weights=True),
-                        ModelCheckpoint(cons.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
+                        ModelCheckpoint(self.BEST_MODEL_PATH, save_best_only=True, monitor="val_loss", verbose=1)
                     ]
+        #print(self.model_params.callbacks)
         epoch_num = int(input("Epochs: "))
         batch_num = int(input("Batch Size: "))
         validation_num = float(input("Validation Split: "))
         self.model_params.redefine_all(epoch_num, batch_num, validation_num, None, None)
         answer = input("Would you like to load a saved data file?").strip().upper()
-        ## TODO: Complete this load data file thing
         if answer == "Y":
             print("Available data folders:")
             for folder in os.listdir(cons.DATA_FOLDER):
@@ -167,15 +204,23 @@ class SavingModelAndFeedback(fsm.State):
                         print("Data file does not exist. Try again")
             
         # Save feedback into file
-        self.model_data.save_data(cons.FEEDBACK_FILE)
+        self.model_data.save_data(self.FEEDBACK_FILE)
         
         if not self.model_data.is_empty():
             print("Retraining model with feedback data...")
             # Create training sets
-            X = np.array(self.model_data.normal_data + self.model_data.anomaly_data)
-            y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
+            if self.name_of_model == cons.IMAGE_NAME:
+                X = np.array(self.model_data.normal_data)
+            elif self.name_of_model == cons.LDRD_NAME:
+                X = [np.array(self.model_data.ld_normal_data), np.array(self.model_data.rd03_normal_data)]
+                #print(X)
+            else: 
+                print("Invalid model type. Returning to main menu.")
+                self.FSM.Transition("toMenu")
+                return
+            # y = np.array([0]*len(self.model_data.normal_data) + [1]*len(self.model_data.anomaly_data)) # trains it with predictions being certain of normal v.s. anomaly scenarios
             history = self.temporal_model.fit(self.model_params, X,X)
-            self.temporal_model.model.save(cons.MODEL_PATH)
+            self.temporal_model.model.save(self.MODEL_PATH)
             print("Model updated and saved.")
 
             answer = input("Would you like to graph the data? (Y/N)").strip().upper()
@@ -215,42 +260,51 @@ class SavingModelAndFeedback(fsm.State):
                     
                     self.model_params.temp_graph = graph_path
                     
-                    self.FSM.Transition("toDocumentModel")
+                    if self.name_of_model == cons.IMAGE_NAME:
+                        self.FSM.Transition("toDocumentImageModel")
+                        return
+                    elif self.name_of_model == cons.LDRD_NAME:
+                        self.FSM.Transition("toDocumentLDRDModel")
+                        return
+                    else: 
+                        print("Model type not detected, so not saved")
+                        self.FSM.Transition("toMenu")
+                        return
                     return
 
         self.FSM.Transition("toMenu")
         return
 
-    def Exit(self):
-        pass
 
 
 class LoadModel(fsm.State):
-    def __init__(self, FSM, model_params, temporal_model):
+    def __init__(self, FSM, model_params, temporal_model, MODEL_FOLDER, name_of_model):
         self.FSM = FSM
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.MODEL_FOLDER = MODEL_FOLDER
+        self.name_of_model = name_of_model
 
     def Enter(self):
         print("Available model folders:")
-        for folder in os.listdir(cons.MODEL_FOLDER):
+        for folder in os.listdir(self.MODEL_FOLDER):
             print("-", folder)
 
     def Execute(self):
-        if not os.listdir(cons.MODEL_FOLDER):
-            print("MODEL_FOLDER is empty.")
+        if not os.listdir(self.MODEL_FOLDER):
+            print(self.name_of_model + " MODEL_FOLDER is empty.")
             self.FSM.Transition("toMenu")
             return
         good_model = False
         while not good_model:
-            answer = input("Select model to load: ").replace(" ", "")
+            answer = input("Select " + self.name_of_model + " model to load: ").replace(" ", "")
             if answer.upper() == "Q":
                 print("Quitting...")
                 self.FSM.Transition("toMenu")
                 return
-            if answer in os.listdir(cons.MODEL_FOLDER):
+            if answer in os.listdir(self.MODEL_FOLDER):
                 good_model = True
-                self.temporal_model.model = load_model(os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer, answer + ".h5"))
+                self.temporal_model.model = load_model(os.path.join(os.getcwd(), self.MODEL_FOLDER, answer, answer + ".h5"))
                 self.model_params.epochs = 0
                 self.model_params.batch_size = 0
                 self.model_params.validation_split = 0
@@ -260,15 +314,13 @@ class LoadModel(fsm.State):
                 print("Model does not exist. Try again")
         self.FSM.Transition("toMenu")
 
-    def Exit(self):
-        pass
 
-## TODO: Finish document feedback
+
 class DocumentFeedback(fsm.State):
-    def __init__(self, FSM, model_params, model_data):
+    def __init__(self, FSM, model_params_list, model_data):
         self.FSM = FSM
-        self.model_params = model_params
         self.model_data = model_data
+        self.model_params_list = model_params_list
     
     def Enter(self):
         pass
@@ -292,25 +344,26 @@ class DocumentFeedback(fsm.State):
         self.model_data.save_data(cons.FEEDBACK_FILE)
         self.model_data.save_data(file_path)
         info_path = os.path.join(folder_path, "info.txt")
-        self.model_params.feedback_file = file_path
+        for model_params in self.model_params_list:
+            model_params.feedback_file = file_path
         notes = input("Notes: ")
         with open(info_path, 'w') as f:
             f.write(notes)
         self.FSM.Transition("toMenu")
         pass
 
-    def Exit(self):
-        pass
 
 
 class DocumentModel(fsm.State):
-    def __init__(self, FSM, model_params, temporal_model):
+    def __init__(self, FSM, model_params, temporal_model, MODEL_FOLDER, name_of_model):
         self.FSM = FSM
         self.model_params = model_params
         self.temporal_model = temporal_model
+        self.MODEL_FOLDER = MODEL_FOLDER
+        self.name_of_model = name_of_model
 
     def Enter(self):
-        pass
+        print("Documenting the " + self.name_of_model + " model")
 
     def Execute(self):
         good_file = False
@@ -321,7 +374,7 @@ class DocumentModel(fsm.State):
                 self.FSM.Transition("toMenu")
                 return
             file_name = answer + ".h5"
-            folder_path = os.path.join(os.getcwd(), cons.MODEL_FOLDER, answer)
+            folder_path = os.path.join(os.getcwd(), self.MODEL_FOLDER, answer)
             file_path = os.path.join(folder_path, file_name)
             if os.path.exists(folder_path):
                 print("Model name already exists. Try again.")
@@ -349,33 +402,173 @@ class DocumentModel(fsm.State):
     def Exit(self):
         print("Model Saved!")
 
+class TestingModel(fsm.State):
+    def __init__(self, FSM, temporal_model, ldrd_temporal_model, model_data, FEEDBACK_FILE):
+        self.FSM = FSM
+        self.temporal_model = temporal_model
+        self.ldrd_temporal_model = ldrd_temporal_model
+        self.model_data = model_data
+        self.FEEDBACK_FILE = FEEDBACK_FILE
 
-class RLHF(fsm.State):
-    def __init__(self, FSM, model_data, allsensors, temporal_model):
+    def Enter(self):
+        print("Model Testing")
+
+    def Execute(self):
+        answer = input("Would you like to load a saved data file?").strip().upper()
+        if answer == "Y":
+            print("Available data folders:")
+            for folder in os.listdir(cons.DATA_FOLDER):
+                print("-", folder)
+            if not os.listdir(cons.DATA_FOLDER):
+                print("DATA_FOLDER is empty.")
+            else:
+                good_data = False
+                while not good_data:
+                    answer = input("Select data to load: ")
+                    if answer in os.listdir(cons.DATA_FOLDER):
+                        good_data = True
+                        data_path = os.path.join(os.getcwd(), cons.DATA_FOLDER, answer, answer + ".pkl")
+                        self.model_data.load_data(data_path)
+                    elif answer.upper() == "Q":
+                        break
+                    else:
+                        print("Data file does not exist. Try again")
+            
+        # Save feedback into file
+        self.model_data.save_data(self.FEEDBACK_FILE)
+        
+        test_data_length = len(self.model_data.normal_data)
+        ldrd_predictions = np.zeros(test_data_length)
+        image_predictions = np.zeros(test_data_length)
+        for i in range(test_data_length):
+            image_predictions[i] = self.temporal_model.predict(self.model_data.normal_data[i])
+            ldrd_predictions[i] = self.ldrd_temporal_model.predict(self.model_data.ld_normal_data[i], self.model_data.rd03_normal_data[i])
+        total_predictions = mod.late_fusion(image_predictions, ldrd_predictions)
+        data = [total_predictions, image_predictions, ldrd_predictions]
+        labels = ["Weighted Average\nReconstruction\nError",
+                    "Image Autoencoder\nAverage Reconstruction\nError",
+                    "LiDAR and MMWave\nAutoencoder Average Reconstruction\nError"]
+        
+        
+        fig = plt.figure(figsize=(12, 8))
+        gs = GridSpec(3, 2, width_ratios=[1.5, 1])  # left column wider
+
+        # ---- Left panel: combined view ----
+        ax_left = fig.add_subplot(gs[:, 0])  # span all rows
+        ax_left.boxplot(data, patch_artist=True, labels=labels)
+        ax_left.set_ylabel("Average Reconstruction Error")
+        ax_left.set_title("All Predictions Together")
+
+        # ---- Right panel: 3 separate boxplots ----
+        for i, (preds, label) in enumerate(zip(data, labels)):
+            ax = fig.add_subplot(gs[i, 1])  # one subplot per row
+            ax.boxplot(preds, patch_artist=True, labels=[label])
+            ax.set_ylabel("Average Reconstruction Error")
+
+            # Compute summary stats
+            q1 = np.percentile(preds, 25)
+            median = np.percentile(preds, 50)
+            q3 = np.percentile(preds, 75)
+            min_val = preds.min()
+            max_val = preds.max()
+
+            stats_text = (
+                f"Min={min_val:.3f}, Q1={q1:.3f}, "
+                f"Median={median:.3f}, Q3={q3:.3f}, Max={max_val:.3f}"
+            )
+
+            # Place stats under each box
+            ax.text(
+                1,
+                ax.get_ylim()[0] - 0.05*(ax.get_ylim()[1]-ax.get_ylim()[0]),
+                stats_text,
+                ha="center", va="top", fontsize=8
+            )
+
+            ax.margins(y=0.2)
+
+        # ---- Global title ----
+        answer = input("Name of Graph: ")
+        fig.suptitle(answer, fontsize=16)
+
+        plt.tight_layout(rect=[0, 0, 1, 0.96]) 
+
+        graph_path = os.path.join(os.getcwd(), "temp_testing_plot.png")
+        plt.savefig(graph_path)
+
+        img = cv2.imread(graph_path)
+        if img is not None:
+            cv2.imshow("Graph", img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        answer = input("Would you like to save the plot and data? (Y/N)").strip().upper()
+        if answer == "Y":
+            if os.path.exists(graph_path):
+                name_of_graph = input("Name of plot: ")
+                graph_target = os.path.join(os.getcwd(), cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".png")
+                os.rename(graph_path, graph_target)
+                df = pd.DataFrame({
+                    "Total": total_predictions,
+                    "Image": image_predictions,
+                    "LDRD": ldrd_predictions
+                })
+                csv_target = os.path.join(os.getcwd(), cons.TESTING_GRAPHS_FOLDER, name_of_graph + ".csv")
+                df.to_csv(csv_target, index=False)
+                print("Plot and data saved!")
+            else:
+                print("Something went wrong, plot was not saved.")
+        else:
+            print("You did not request  the plot to be saved. Going to menu...")
+        self.FSM.Transition("toMenu")
+
+
+
+class RealTimeDetection(fsm.State):
+    def __init__(self, FSM, model_data, allsensors, temporal_model, ldrd_temporal_model):
         self.FSM = FSM
         self.model_data = model_data
         self.allsensors = allsensors
         self.temporal_model = temporal_model
+        self.ldrd_temporal_model = ldrd_temporal_model
 
     def Enter(self):
         print("Human Feedback Mode")
         print("Press 'n' to label homeostasis, 'a' to label abnormalities, and 'q' to quit.")
         if self.allsensors.gemini:
-            self.allsensors.gemini.state = "RLHF"
+            self.allsensors.gemini.state = "RealTimeDetection"
 
     def Execute(self):
+        pred = None
+        pred_image = None
+        pred_ldrd = None
         all_sensor_data = self.allsensors.capture_sensor_info()
         if all_sensor_data and all_sensor_data.camera_data:
             feat = self.temporal_model.feature_extract_combine(all_sensor_data.camera_data.frame)
             self.temporal_model.feature_append(feat) # add 1D array to end of the buffer
 
-            
             if self.temporal_model.is_buffer_long_enough():
-                pred = self.temporal_model.model_prediction()
-                is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
-                self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.2f})"
+                pred_image = self.temporal_model.model_prediction()
+        
+        if all_sensor_data and all_sensor_data.lidar_data and all_sensor_data.rd03_data:
+            self.ldrd_temporal_model.all_features_append(all_sensor_data.lidar_data, all_sensor_data.rd03_data)
+           
+            if self.ldrd_temporal_model.are_buffers_long_enough():
+                pred_ldrd = self.ldrd_temporal_model.model_prediction()  
 
-                # Draw on frame
+        if pred_image and pred_ldrd:
+            pred = mod.late_fusion(pred_image, pred_ldrd)
+        elif pred_image:
+            pred = pred_image
+        elif pred_ldrd:
+            pred = pred_ldrd
+
+        if pred:    
+            is_anomaly = pred > cons.ANOMALY_THRESHOLD #checks prediction against threshold
+            self.allsensors.gemini.state = f"{'ANOMALY' if is_anomaly else 'NORMAL'} ({pred:.4f})"
+
+            # Draw on frame
+        if all_sensor_data:
             display = self.allsensors.gemini.create_display(all_sensor_data.camera_data.processed_frames)
             cv2.imshow("Feedback Data", display)
         else:
@@ -385,12 +578,12 @@ class RLHF(fsm.State):
         if key == ord('q'):
             self.FSM.Transition("toMenu")
             return
-        elif key == ord('n') and self.temporal_model.is_buffer_long_enough():
-            self.model_data.append_normal_data(np.stack(self.buffer))
-            print("Labeled one normal sequence")
-        elif key == ord('a') and self.temporal_model.is_buffer_long_enough():
-            self.model_data.append_anomaly_data(np.stack(self.buffer))
-            print("Labeled one anomalous sequence")
+        # elif key == ord('n') and self.temporal_model.is_buffer_long_enough():
+        #     self.model_data.append_normal_data(np.stack(self.buffer))
+        #     print("Labeled one normal sequence")
+        # elif key == ord('a') and self.temporal_model.is_buffer_long_enough():
+        #     self.model_data.append_anomaly_data(np.stack(self.buffer))
+        #     print("Labeled one anomalous sequence")
 
     def Exit(self):
         self.temporal_model.buffer.clear()
@@ -409,7 +602,4 @@ class End(fsm.State):
         self.model_data.program_running = False
 
     def Execute(self):
-        pass
-
-    def End(self):
         pass

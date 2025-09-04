@@ -1,0 +1,58 @@
+@startuml
+start
+:Initialize first_byte, LidarIntakeData, LiDARPreprocessedData;
+:Initialize prev_angle, prev_unwrapped, cur_rotation_index;
+
+while (running?) is (yes)
+  :Read first_byte from serial;
+  if (first_byte == 0x54) then (yes)
+    :Read second_byte from serial;
+    if (second_byte == 0x2C) then (yes)
+      :Collect full packet (read remaining bytes);
+      if (Packet length correct?) then (yes)
+        if (Checksum valid?) then (yes)
+          :Extract speed, start_angle, end_angle;
+          :Compute angle_diff and angle_increment;
+
+          repeat
+            :Extract distance, intensity, angle (per point);
+            if (Within radius?) then (yes)
+              if (First angle?) then (yes)
+                :Init unwrapped angle and cur_rotation_index;
+              else (no)
+                :Compute delta and unwrap angle;
+                :Update rotation_idx;
+              endif
+
+              if (Rotation changed?) then (yes)
+                :Set end_timestamp;
+                if (intake_data not empty?) then (yes)
+                  :send_scan_calc_speed_and_clear();
+                endif
+                :Set start_timestamp;
+                :Update cur_rotation_index;
+              endif
+
+              :Append (angle, distance, intensity, speed) to intake_data;
+              :Update prev_angle and prev_unwrapped;
+            else (no)
+              :Discard point;
+            endif
+          repeat while (more points?)
+
+        else (no)
+          :Discard packet (bad CRC);
+        endif
+      else (no)
+        :Reset input buffer (bad length);
+      endif
+    else (no)
+      :Shift bytes (treat second_byte as new first_byte);
+    endif
+  else (no)
+    :Reset first_byte (no header);
+  endif
+endwhile (no)
+
+stop
+@enduml

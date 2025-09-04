@@ -1,0 +1,44 @@
+@startuml
+title Camera Capture and Preprocessing Activity Diagram
+
+start
+
+:Main program calls one_capture();
+
+if (Frames available in queue?) then (No)
+    :Return None;
+    stop
+else (Yes)
+    :Get synchronized frame set (depth, IR, color);
+endif
+
+if (All required frames present?) then (No)
+    :Return None;
+    stop
+else (Yes)
+    :Extract raw depth frame;
+    :Extract left IR frame;
+    :Extract right IR frame;
+    :Extract color frame;
+endif
+
+:Apply HDR merge filter to frames;
+
+if (HDR merge successful?) then (No)
+    :Return None;
+    stop
+else (Yes)
+    :Get merged depth frame;
+    :Convert depth to mm scale;
+    :Create HDR depth image;
+endif
+
+:Convert left IR frame to image;
+:Convert right IR frame to image;
+:Convert color frame to BGR image;
+
+:Bundle results into CameraData object;
+:Return CameraData to main program;
+
+stop
+@enduml

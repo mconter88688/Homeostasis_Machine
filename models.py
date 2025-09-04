@@ -10,6 +10,11 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, Ba
 from tensorflow.keras.optimizers import Adam
 from collections import deque # for sliding window
 
+############## FUSION ##########################
+
+def late_fusion(pred_image, pred_ldrd):
+    return cons.IMAGE_COEFF*pred_image + (1-cons.IMAGE_COEFF)*pred_ldrd
+
 ############## MODELS ###########################
 
 def build_simple_7_17():
@@ -50,28 +55,6 @@ def build_one_way_7_18():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-def build_autoencoder_7_23_not_tested():
-    input_layer = Input(shape = (1, cons.SEQ_LEN, 1536))
-    x = ConvLSTM2D(32, (3,3), activation = 'relu', padding = 'same', return_sequences = True, strides = (2,2))(input_layer)
-    x = LayerNormalization()(x)
-    
-    x = ConvLSTM2D(64, (3,3), activation='relu', padding = 'same', return_sequences=True, strides=(2,2))(x)
-    x = LayerNormalization()(x)
-
-    encoded = ConvLSTM2D(64, (3,3), activation='relu', padding='same', return_sequences=True)(x)
-
-    x = Conv3DTranspose(64, (3,3,3), strides=(1,2,2), padding='same', activation='relu')(encoded)
-    x = LayerNormalization()(x)
-
-    x = Conv3DTranspose(32, (3,3,3), strides=(1,2,2), padding='same', activation='relu')(x)
-    x = LayerNormalization()(x)
-
-    # decoded should have number of output channels as number of neurons
-    decoded = Conv3DTranspose(3, (3,3,3), padding='same', activation='sigmoid')(x)
-
-    model = Model(inputs=input_layer, outputs=decoded)
-    model.compile(optimizer=Adam(1e-4), loss='mse')
-    return model
 
 def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256):
     input_layer = Input(shape=(seq_len, feature_dim))  # (batch, time, features)
@@ -104,10 +87,50 @@ def build_autoencoder_8_4(seq_len=cons.SEQ_LEN, feature_dim=1664, latent_dim=256
 
     return model
 
+def build_ldrd_autoencoder(seq_len = cons.SEQ_LEN):
+    # ----- LiDAR branch -----
+    
+    NUM_LD_DATA_INPUT_TYPES = 2
+    NUM_RD_DATA_INPUT_TYPES = 3
+    
+    lidar_input = Input(shape=(seq_len, cons.LD_NUM_BINS, NUM_LD_DATA_INPUT_TYPES), name="lidar_input")
+    x1 = layers.TimeDistributed(layers.Conv1D(32, 3, activation="relu"))(lidar_input)
+    x1 = layers.TimeDistributed(layers.MaxPooling1D(2))(x1)
+    x1 = layers.TimeDistributed(layers.Flatten())(x1)
+    x1 = layers.LSTM(128, return_sequences=False)(x1)
+
+    # ----- Radar branch -----
+    radar_input = Input(shape=(seq_len, cons.RADAR_MAX_TARGETS, NUM_RD_DATA_INPUT_TYPES), name="radar_input")
+    x2 = layers.TimeDistributed(layers.Flatten())(radar_input)
+    x2 = layers.LSTM(32, return_sequences=False)(x2)
+
+    # ----- Fusion -----
+    combined = layers.Concatenate()([x1, x2])
+    encoded = layers.Dense(128, activation="relu")(combined)  # bottleneck
+
+    # ----- Decoder -----
+    # LiDAR reconstruction
+    lidar_dec = layers.Dense(cons.LD_NUM_BINS*NUM_LD_DATA_INPUT_TYPES*seq_len, activation="linear")(encoded)
+    lidar_dec = layers.Reshape((seq_len, cons.LD_NUM_BINS, NUM_LD_DATA_INPUT_TYPES))(lidar_dec)
+
+    # Radar reconstruction
+    radar_dec = layers.Dense(cons.RADAR_MAX_TARGETS*NUM_RD_DATA_INPUT_TYPES*seq_len, activation="linear")(encoded)
+    radar_dec = layers.Reshape((seq_len, cons.RADAR_MAX_TARGETS, NUM_RD_DATA_INPUT_TYPES))(radar_dec)
+
+    # ----- Model -----
+    autoencoder = Model(inputs=[lidar_input, radar_input],
+                        outputs=[lidar_dec, radar_dec])
+
+    autoencoder.compile(optimizer="adam", loss="mse")
+    #autoencoder.summary()
+    return autoencoder
+
+
+
 ############# HELPER FUNCTIONS #########################################
 
 # Build or load temporal model
-def build_model():
+def build_image_model():
     return build_autoencoder_8_4()
 
 ########### FEATURE EXTRACTORS ###########################################
@@ -186,19 +209,68 @@ class ModelConfigParam:
         self.feedback_file = feedback_file
         self.model_file = model_file
 
-
-class ImageAutoencoder:
-    def __init__(self):
-        if os.path.exists(cons.MODEL_PATH):
-            self.model = load_model(cons.MODEL_PATH) # function imported from tensorflow.keras.models
+class HomeostasisModel:
+    def __init__(self, model_path, model_building_func):
+        if os.path.exists(model_path):
+            self.model = load_model(model_path) # function imported from tensorflow.keras.models
         else:
-            self.model = build_model()
+            self.model = model_building_func()
+    
+    def fit(self, model_params, train_data_x, train_data_y):
+        return self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
+
+
+
+
+
+class LDRD03Autoencoder(HomeostasisModel):
+    def __init__(self):
+        super().__init__(model_path= cons.LDRD_MODEL_PATH, model_building_func=build_ldrd_autoencoder)
+        self.lidar_buffer = deque(maxlen=cons.SEQ_LEN)
+        self.radar_buffer = deque(maxlen=cons.SEQ_LEN)
+
+    def all_features_append(self, lidar_preprocessed_data, radar_preprocessed_data):
+        lidar_array = lidar_preprocessed_data.class_to_single_normalized_numpy_array()
+        radar_array = radar_preprocessed_data.class_to_single_normalized_numpy_array()
+        self.lidar_buffer.append(lidar_array)
+        self.radar_buffer.append(radar_array)
+
+    def are_buffers_long_enough(self, buffer_len = cons.SEQ_LEN):
+        return (len(self.lidar_buffer) == buffer_len and len(self.radar_buffer) == buffer_len)
+
+    def model_prediction(self):
+        if not self.are_buffers_long_enough():
+            return None
+        else:
+            return self.predict(self.lidar_buffer, self.radar_buffer)
+        
+    def predict(self, lidar_data, radar_data):
+        seq = [np.expand_dims(np.stack(lidar_data), axis=0), np.expand_dims(np.stack(radar_data), axis=0)]  # shape (1,SEQ_LEN,FEATURE_DIM)
+        # Get reconstruction from model
+        reconstruction = self.model.predict(seq) 
+
+        # Compute per-timestep MSE
+        errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  
+
+        return np.mean(errors)
+        
+
+    
+
+class ImageAutoencoder(HomeostasisModel):
+    def __init__(self):
+        super().__init__(model_path= cons.IMAGE_MODEL_PATH, model_building_func=build_image_model)
         self.color_feature_extractor = None
         self.ir_feature_extractor = None
         self.hdr_feature_extractor = None
         self.buffer = deque(maxlen=cons.SEQ_LEN)
-
         
+
+    def feature_append(self, feat):
+        self.buffer.append(feat)
+
+    def is_buffer_long_enough(self, buffer_len = cons.SEQ_LEN):
+        return len(self.buffer) == buffer_len   
 
     def feature_extractor_setup(self): 
         self.color_feature_extractor = build_color_feature_extractor()
@@ -245,29 +317,22 @@ class ImageAutoencoder:
         combined = np.concatenate([color_features, hdr_features,left_ir_features, right_ir_features], axis=0)
         #print(combined.shape)
         return combined
-        
-    def feature_append(self, feat):
-        self.buffer.append(feat)
 
     def model_prediction(self):
-        if not len(self.buffer) == cons.SEQ_LEN:
+        if not self.is_buffer_long_enough():
             return None
         else:
-            seq = np.expand_dims(np.stack(self.buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
-            # Get reconstruction from model
-            reconstruction = self.model.predict(seq)  # shape: (1, 20, 1536)
-
-            # Compute per-timestep MSE
-            errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  # shape: (20,)
-
-            return np.mean(errors)
+            return self.predict(self.buffer)
         
-    def fit(self, model_params, train_data_x, train_data_y):
-        return self.model.fit(train_data_x, train_data_y, validation_split = model_params.validation_split,shuffle=model_params.shuffle, epochs=model_params.epochs, batch_size=model_params.batch_size, callbacks=model_params.callbacks)
+    def predict(self, image_buffer):
+        seq = np.expand_dims(np.stack(image_buffer), axis=0)  # shape (1,SEQ_LEN,FEATURE_DIM)
+        # Get reconstruction from model
+        reconstruction = self.model.predict(seq)  # shape: (1, 20, 1536)
 
-    def is_buffer_long_enough(self):
-        return len(self.buffer) == cons.SEQ_LEN
-        
+        # Compute per-timestep MSE
+        errors = np.mean((reconstruction[0] - seq[0])**2, axis=1)  # shape: (20,)
+
+        return np.mean(errors)     
     
 
     

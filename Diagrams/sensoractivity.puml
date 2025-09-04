@@ -1,0 +1,37 @@
+@startuml
+|Main Thread|
+start
+:Initialize AllSensors (LD19, RD03D, Camera);
+
+fork
+  |LD19 Thread|
+  :Start LD19 thread;
+  while (running) is (true)
+    :Read LiDAR data;
+    :Update latest_data with lock;
+  endwhile
+fork again
+  |RD03 Thread|
+  :Start RD03 thread;
+  while (running) is (true)
+    :Read Radar data;
+    :Update latest_data with lock;
+  endwhile
+fork again
+  |Main Thread|
+  :Configure Gemini camera streams;
+  :Configure HDR;
+  repeat
+    :Capture image from Gemini camera;
+    if (image valid?) then (yes)
+      :Access latest LiDAR and Radar data using locks;
+      :Aggregate into AllSensorsData object;
+      :Pass to anomaly detection module;
+    else (no)
+      :Return / Retry;
+    endif
+  repeat while (system running)
+end fork
+
+stop
+@enduml
